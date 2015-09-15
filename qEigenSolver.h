@@ -137,20 +137,3 @@ template<typename T, int N> CUDA_FUNC_IN int qrAlgorithm(const qMatrix<T, N, N>&
 
 	return n_eig;
 }
-/*
-template<typename T, int N> CUDA_FUNC_IN void qrAlgorithmDoubleShift(const qMatrix<T, N, N>& X, qMatrix<T, N, N>& D, qMatrix<T, N, N>& V, int n = 50)
-{
-V.id();
-qMatrix<T, N, N> X_i = X, I = qMatrix<T, N, N>::Id();
-for(int i = 0; i < n; i++)
-{
-T kappa1 = X_i(N - 2, N - 2) + X_i(N - 1, N - 1), kappa2 = X_i(N - 2, N - 2) * X_i(N - 1, N - 1) - X_i(N - 2, N - 1) * X_i(N - 1, N - 2);
-qMatrix<T, N, N> p_A = X_i * X_i - kappa1 * X_i + kappa2 * I;
-qMatrix<T, N, N> Q_i, R_i;
-qrHousholder(p_A, Q_i, R_i);
-X_i = Q_i.Transpose() * X_i * Q_i;
-V = V * Q_i;
-}
-D = X_i;
-}
-*/

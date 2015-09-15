@@ -124,6 +124,9 @@ public:
 
 	typedef T ELEMENT_TYPE;
 
+	typedef qMatrix<T, M, 1> COL_TYPE;
+	typedef qMatrix<T, 1, N> ROW_TYPE;
+
 	CUDA_FUNC_IN qMatrix<T, M, N>()
 	{
 
@@ -208,6 +211,8 @@ public:
 #ifndef ISCUDA
 		if (i >= M || j >= N)
 			throw std::runtime_error("Invalid matrix access.");
+#else
+		printf("%s   Invalid matrix element access at (%d, %d)!", __PRETTY_FUNCTION__, i, j);
 #endif
 		return dat[i * N + j];
 	}
@@ -217,6 +222,8 @@ public:
 #ifndef ISCUDA
 		if (i >= M || j >= N)
 			throw std::runtime_error("Invalid matrix access.");
+#else
+		printf("%s   Invalid matrix element access at (%d, %d)!", __PRETTY_FUNCTION__, i, j);
 #endif
 		return dat[i * N + j];
 	}
@@ -229,6 +236,12 @@ public:
 			return operator()(0, i);
 #ifndef __CUDA_ARCH__
 		else throw std::runtime_error("Invalid matrix access.");
+#else
+		else
+		{
+			printf("%s   Matrix is not a vector!", __PRETTY_FUNCTION__);
+			return operator()(0, 0);
+		}
 #endif 
 	}
 
@@ -240,6 +253,12 @@ public:
 			return operator()(0, i);
 #ifndef __CUDA_ARCH__
 		else throw std::runtime_error("Invalid matrix access.");
+#else
+		else
+		{
+			printf("%s   Matrix is not a vector!", __PRETTY_FUNCTION__);
+			return operator()(0, 0);
+		}
 #endif 
 	}
 
@@ -934,7 +953,7 @@ template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> trimatu(const qMatrix<
 	qMatrix<T, N, N> res = A;
 	for (int i = 1; i < N; i++)
 		for (int j = 0; j < i; j++)
-			res(i, j) = T();
+			res(i, j) = T(0);
 	return res;
 }
 
@@ -944,9 +963,23 @@ template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> trimatl(const qMatrix<
 	qMatrix<T, N, N> res = A;
 	for (int j = 1; j < N; j++)
 		for (int i = 0; i < j; i++)
-			res(i, j) = T();
+			res(i, j) = T(0);
 	return res;
 }
+
+//interpret square matrix A as tridiagonal
+template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> tridiag(const qMatrix<T, N, N>& A)
+{
+	qMatrix<T, N, N> res = A;
+	for (int j = 1; j < N; j++)
+		for (int i = 0; i < j - 1; i++)
+			res(i, j) = T(0);
+	for (int i = 1; i < N; i++)
+		for (int j = 0; j < i - 1; j++)
+			res(i, j) = T(0);
+	return res;
+}
+
 
 template<typename T, int N> CUDA_FUNC_IN T trace(const qMatrix<T, N, N>& A)
 {

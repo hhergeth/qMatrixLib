@@ -1,6 +1,7 @@
 #pragma once
 
 #include "qMatrix.h"
+#include <assert.h>
 
 //decompositions
 
@@ -225,4 +226,21 @@ template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, 1> conjugate_gradient(con
 		rsold = rsnew;
 	}
 	return x;
+}
+
+template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, 1> tridiag_solve(const qMatrix<T, N, N>& A, const qMatrix<T, N, 1>& rhs)
+{
+	assert(is_tridiagonal(A));
+	qMatrix<T, N, 1> c_d, d_d;
+	c_d(0) = A(0, 1) / A(0, 0);
+	for (int i = 1; i < N - 1; i++)
+		c_d(i) = A(i, i + 1) / (A(i, i) - A(i, i - 1) * c_d(i - 1));
+	d_d(0) = rhs(0) / A(0, 0);
+	for (int i = 1; i < N; i++)
+		d_d(i) = (rhs(i) - A(i, i - 1) * d_d(i - 1)) / (A(i, i) - A(i, i - 1) * c_d(i - 1));
+	qMatrix<T, N, 1> r;
+	r(N - 1) = d_d(N - 1);
+	for (int i = N - 2; i >= 0; i--)
+		r(i) = d_d(i) - c_d(i) * r(i + 1);
+	return r;
 }

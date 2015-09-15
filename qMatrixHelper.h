@@ -15,7 +15,7 @@ template<typename T, int M, int N> std::string ToWolframString(const qMatrix<T, 
 			if (col != N - 1)
 				stream << ", ";
 		}
-		stream << "}\n";
+		stream << "}" << (row != M - 1 ? "," : "") << "\n";
 	}
 	stream << "}";
 	return stream.str();
