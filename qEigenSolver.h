@@ -95,7 +95,7 @@ namespace __qrAlgorithm__
 	}
 }
 
-template<typename T, int N> CUDA_FUNC_IN int qrAlgorithm(const qMatrix<T, N, N>& X, qMatrix<T, N, N>& D, qMatrix<T, N, N>& V, int n = 50)
+template<typename T, int N> CUDA_FUNC_IN int qrAlgorithm(const qMatrix<T, N, N>& X, qMatrix<T, N, 1>& D, qMatrix<T, N, N>& V, int n = 50)
 {
 	V.id();
 	qMatrix<T, N, N> X_i = X;
@@ -106,34 +106,39 @@ template<typename T, int N> CUDA_FUNC_IN int qrAlgorithm(const qMatrix<T, N, N>&
 		X_i = R_i * Q_i;
 		V = V * Q_i;
 	}
-	D = X_i;
+	D = diag<qMatrix<T, N, 1>>(X_i);
 	V.zero();
-	int n_eig = 0;
-	while (n_eig < N && std::abs(D(n_eig, n_eig)) > T(1e-5))
+	int n_eig_counter = 0, j = 0;
+	while (j < N && std::abs(D(j)) > T(1e-5))
 	{
-		V.col(n_eig, __qrAlgorithm__::inversePowerMethod(X, D(n_eig, n_eig)));
-		n_eig++;
-	}
-
-	for (int j = 0; j < n_eig; j++)
-	{
-		auto eigVec = V.col(j);
-		auto eigVal = D(j, j);
+		auto eigVal = D(j++);
+		auto eigVec = __qrAlgorithm__::inversePowerMethod(X, eigVal);
 		auto diff = X * eigVec - eigVal  * eigVec;
-		if (diff.accuabs() > T(1e-3))
+		if (norm(diff) > T(1e-4))
 		{
-			D(j, j) = 0;
-			V.col(j, qMatrix<T, N, 1>::Zero());
+			D(j-1) = 0;
+			V.col(j-1, qMatrix<T, N, 1>::Zero());
+		}
+		else
+		{
+			V.col(n_eig_counter, eigVec);
+			n_eig_counter++;
 		}
 	}
 
-	for (int n = n_eig; n > 1; n--)
-		for (int i = 0; i < n - 1; i++)
-			if (D(i, i) > D(i + 1, i + 1))
-			{
-				qMatrix_swap(D(i, i), D(i + 1, i + 1));
-				V.swap_cols(i, i + 1);
-			}
+	for (int i = 0; i < n_eig_counter - 1; i++)
+	{
+		int minIdx = i;
+		for (int j = i + 1; j < n_eig_counter; j++)
+			if (D(j) < D(minIdx))
+				minIdx = j;
+		if (minIdx != i)
+		{
+			V.swap_cols(i, minIdx);
+			D.swap_rows(i, minIdx);
 
-	return n_eig;
+		}
+	}
+
+	return n_eig_counter;
 }
