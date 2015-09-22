@@ -4,48 +4,50 @@
 #include "qLinearSolver.h"
 #include "qEigenSolver.h"
 
-template<typename T, int M, int N> CUDA_FUNC_IN int svd(const qMatrix<T, M, N>& A, qMatrix<T, M, M>& U, qMatrix<T, N, N>& V, qMatrix<T, M, N>& S, T eps = T(-1))
+template<typename T, int M, int N> CUDA_FUNC_IN void svd(const qMatrix<T, M, N>& A, qMatrix<T, M, M>& U, qMatrix<T, N, N>& V, qMatrix<T, M, N>& S, T eps = T(-1))
 {
 	qMatrix<T, M, N> B = A;
-	std::cout << "A : " << std::endl << A << std::endl;
 	U = qMatrix<T, M, M>::Id();
 	V = qMatrix<T, N, N>::Id();
-	for (int k = 0; k < DMIN2(M - 1, N); k++)
+	for (int k = 0; k < N; k++)
 	{
-		qMatrix<T, M, 1> u = householder(B, k);
-		qMatrix<T, M, M> U_k = qMatrix<T, M, M>::Id() - T(2) * u * u.Transpose();
-		B = U_k.Transpose() * B;
+		qMatrix<T, M, 1> u = __qrHousholder__::householder(B, k);
+		qMatrix<T, M, M> Q_k = qMatrix<T, M, M>::Id() - T(2) * u * u.transpose();
 
-		qMatrix<T, N, N> V_k = qMatrix<T, N, N>::Id();
+		B = Q_k * B;
+		U = U * Q_k;
+
 		if (k < N - 2)
 		{
-			qMatrix<T, 1, N> b = B.row(k), v;
-			for (int i = 0; i <= k; i++)
-				b(0, i) = 0;
-			T alpha = qMatrix_sgn(b(0, k + 1)) * b.p_norm(T(2));
-			v = b - alpha * qMatrix<T, M, 1>::e(k + 1).Transpose();
-			v = v / v.p_norm(T(2));
-			V_k = qMatrix<T, N, N>::Id() - T(2) * v.Transpose() * v;
-		}
+			qMatrix<T, N, 1> v = __qrHousholder__::householder(B.transpose(), k);
+			qMatrix<T, N, N> P_k1 = qMatrix<T, N, N>::Id() - T(2) * v * v.transpose();
 
-		U = U_k * U;
-		V = V * V_k;
-		B = B * V_k;
+			B = B * P_k1;
+			V = P_k1 * V;
+		}
 	}
 
-	qMatrix<T, M, M> ev0, ev1, U2, V2;
-	qrAlgorithmSymmetric(B * B.Transpose(), ev0, U2);
-	qrAlgorithmSymmetric(B.Transpose() * B, ev1, V2);
+	qMatrix<T, M, M> ev0, U2;
+	qrAlgorithmSymmetric(B * B.transpose(), ev0, U2);
+	qMatrix<T, N, N> V2, ev1;
+	qrAlgorithmSymmetric(B.transpose() * B, ev1, V2);
 
-	S = diagmat(ev0.diag().sqrt());
-	U = U.Transpose() * U2;
-	V = V * V2;
+	auto dq = diag<qMatrix<T, M, 1>>(ev0);
+	S = diagmat<T, M, N>(dq.sqrt());
+	U = U * U2;
+	V = V2 * V;
+}
 
-	std::cout << "U : " << std::endl << U << std::endl;
-	std::cout << "S : " << std::endl << S << std::endl;
-	std::cout << "V : " << std::endl << V << std::endl;
-	std::cout << "USV' : " << std::endl << (U * S * V.Transpose()) << std::endl;
-	return 1;
+template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, N, M> pseudoinverse(const qMatrix<T, M, N>& A)
+{
+	qMatrix<T, M, M> U;
+	qMatrix<T, N, N> V;
+	qMatrix<T, M, N> E;
+	svd(A, U, V, E);
+	for (int i = 0; i < DMIN2(M, N); i++)
+		if (E(i, i) != 0)
+			E(i, i) = T(1.0) / E(i, i);
+	return V * E * U.transpose();
 }
 
 //general purpose

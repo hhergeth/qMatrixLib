@@ -25,7 +25,7 @@ template<typename T, int M, int N> qMatrix<T, M, N> FromWolframString(const std:
 {
 	std::istringstream stream(str);
 	qMatrix<T, M, N> r;
-	r.id();
+	r.zero();
 	std::string::size_type p = str.find("{");
 	std::string::size_type n_row = str.find("{", p + 1);
 	T val;
@@ -72,20 +72,22 @@ template<typename T, int M, int N> qMatrix<T, M, N> FromMatlabString(const std::
 {
 	std::istringstream stream(str);
 	qMatrix<T, M, N> r;
-	r.id();
+	r.zero();
 	std::string::size_type p = str.find("[");
 	T val;
 	for (int row = 0; row < M; row++)
 	{
+		std::string::size_type n_row = str.find(";", p + 1);
 		for (int col = 0; col < N; col++)
 		{
 			std::string::size_type p2 = str.find(",", p);
 			stream.seekg(p + 1);
 			stream >> val;
 			r(row, col) = val;
+			if (p2 > n_row)
+				break;
 			p = p2;
 		}
-		std::string::size_type n_row = str.find(";", p + 1);
 		p = n_row;
 	}
 	return r;

@@ -679,6 +679,41 @@ public:
 		return true;
 	}
 
+	CUDA_FUNC_IN bool is_upper_bidiagonal() const
+	{
+		for (int i = 0; i < M; i++)
+		{
+			for (int j = 0; j < i; j++)
+				if (operator()(i, j) != 0)
+					return false;
+
+			for (int j = i + 2; j < N; j++)
+				if (operator()(i, j) != 0)
+					return false;
+		}
+		return true;
+	}
+
+	CUDA_FUNC_IN bool is_lower_bidiagonal() const
+	{
+		for (int i = 0; i < M; i++)
+		{
+			for (int j = 0; j < i - 1; j++)
+				if (operator()(i, j) != 0)
+					return false;
+
+			for (int j = i + 1; j < N; j++)
+				if (operator()(i, j) != 0)
+					return false;
+		}
+		return true;
+	}
+
+	CUDA_FUNC_IN bool is_bidiagonal() const
+	{
+		return is_upper_bidiagonal() || is_lower_bidiagonal();
+	}
+
 	template<typename U> CUDA_FUNC_IN qMatrix<U, M, N> convert()
 	{
 		qMatrix<U, M, N> res;
@@ -832,6 +867,15 @@ template<typename VEC> CUDA_FUNC_IN qMatrix<typename VEC::ELEMENT_TYPE, VEC::SIZ
 	qMatrix<typename VEC::ELEMENT_TYPE, VEC::SIZE::DIM, VEC::SIZE::DIM> res;
 	res.zero();
 	::diag(res, diag);
+	return res;
+}
+
+template<typename T, int M, int N, int L> CUDA_FUNC_IN qMatrix<T, M, N> diagmat(const qMatrix<T, L, 1>& diag)
+{
+	qMatrix<T, M, N> res;
+	res.zero();
+	for (int i = 0; i < DMIN2(DMIN2(M, N), L); i++)
+		res(i, i) = diag(i);
 	return res;
 }
 
