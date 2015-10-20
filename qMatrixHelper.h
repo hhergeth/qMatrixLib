@@ -80,10 +80,10 @@ template<typename T, int M, int N> qMatrix<T, M, N> FromMatlabString(const std::
 		std::string::size_type n_row = str.find(";", p + 1);
 		for (int col = 0; col < N; col++)
 		{
-			std::string::size_type p2 = str.find(",", p);
 			stream.seekg(p + 1);
 			stream >> val;
 			r(row, col) = val;
+			std::string::size_type p2 = str.find(",", p + 1);
 			if (p2 > n_row)
 				break;
 			p = p2;

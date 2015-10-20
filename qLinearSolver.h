@@ -16,15 +16,38 @@ namespace __qrHousholder__
 		return v;
 	}
 
-	template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, 1> householder(const qMatrix<T, M, N>& A, int k)
+	template<bool UPPER = true, typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, 1> householderCol(const qMatrix<T, M, N>& A, int k, int off = 0)
 	{
-		qMatrix<T, M, 1> a = A.col(k), e = ::e<qMatrix<T, M, 1>>(k), u, v;
-		if (a.accu() == a(0, 0))
-			return a / a(0, 0);
-		for (int i = 0; i < k; i++)
-			a(i, 0) = 0;
-		T alpha = qMatrix_sgn(a(k, 0)) * a.p_norm(T(2));
+		qMatrix<T, M, 1> a = A.col(k), e = ::e<qMatrix<T, M, 1>>(k + off), u, v;
+		if (a.accu() == a(0))
+			return a / a(0);
+		if (UPPER)
+			for (int i = 0; i < k + off; i++)
+				a(i) = 0;
+		else for (int i = k + off + 1; i < M; i++)
+				a(i) = 0;
+		T alpha = qMatrix_sgn(a(k + off)) * a.p_norm(T(2));
 		u = a - alpha * e;
+		if (u.p_norm(T(2)) == 0)
+			return qMatrix<T, M, 1>::Zero();
+		v = u / u.p_norm(T(2));
+		return v;
+	}
+
+	template<bool UPPER = true, typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, 1, N> householderRow(const qMatrix<T, M, N>& A, int k, int off = 0)
+	{
+		qMatrix<T, 1, N> a = A.row(k), e = ::e<qMatrix<T, 1, N>>(k + off), u, v;
+		if (a.accu() == a(0))
+			return a / a(0);
+		if (UPPER)
+			for (int i = 0; i < k + off; i++)
+				a(i) = 0;
+		else for (int i = k + off + 1; i < N; i++)
+				a(i) = 0;
+		T alpha = qMatrix_sgn(a(k + off)) * a.p_norm(T(2));
+		u = a - alpha * e;
+		if (u.p_norm(T(2)) == 0)
+			return qMatrix<T, 1, N>::Zero();
 		v = u / u.p_norm(T(2));
 		return v;
 	}
@@ -37,7 +60,7 @@ template<typename T, int M, int N> CUDA_FUNC_IN void qrHousholder(const qMatrix<
 	int K = DMIN2(M - 1, N);
 	for (int k = 0; k < K; k++)
 	{
-		qMatrix<T, M, 1> v = __qrHousholder__::householder(R, k);
+		qMatrix<T, M, 1> v = __qrHousholder__::householderCol(R, k);
 		qMatrix<T, M, M> Q_k = qMatrix<T, M, M>::Id() - T(2.0) * v * v.transpose();
 		Q = Q * Q_k.transpose();
 		R = Q_k * R;
@@ -88,38 +111,6 @@ template<typename T, int M, int N> CUDA_FUNC_IN void qrGivens(const qMatrix<T, M
 			Q = Q * Q_k.transpose();
 			R = Q_k * R;
 		}
-}
-
-template<typename T, int M, int N> CUDA_FUNC_IN void qrHousholderRR(const qMatrix<T, M, N>& A, qMatrix<T, M, M>& Q, qMatrix<T, M, N>& R, qMatrix<T, M, M>& P)
-{
-	P.id();
-	qMatrix<T, N, 1> colNorms;
-	for (int i = 0; i < N; i++)
-		colNorms(i) = qMatrix_sqr(A.col(i).p_norm(T(2)));
-	Q.id();
-	R = A;
-	int K = DMIN2(M - 1, N);
-	for (int j = 0; j < K; j++)
-	{
-		int p = j;
-		for (int i = j; i < K; i++)
-			if (colNorms(i, 0) > colNorms(p, 0))
-				p = i;
-		if (colNorms(p) == 0)
-			break;
-		if (j != p)
-		{
-			P.swap_cols(p, j);
-			R.swap_cols(p, j);
-			colNorms.swap_rows(p, j);
-		}
-		qMatrix<T, M, 1> v = householder(R, p);
-		R = R - v * (v.transpose() * R);
-		Q = Q - (Q * v) * v.transpose();
-		for (int i = j + 1; i < K; i++)
-			colNorms(i, 0) = colNorms(i, 0) - qMatrix_sqr(R(j, i));
-	}
-	R = R * P.transpose();
 }
 
 template<typename T, int N> CUDA_FUNC_IN void luDecomposition(const qMatrix<T, N, N>& A, qMatrix<T, N, N>& P, qMatrix<T, N, N>& L, qMatrix<T, N, N>& U)

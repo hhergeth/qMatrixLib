@@ -63,8 +63,9 @@ template<typename T, int N> CUDA_FUNC_IN void hessenbergReduction(const qMatrix<
 }
 
 //X has to be symmetric and of full rank
-template<typename T, int N> CUDA_FUNC_IN void qrAlgorithmSymmetric(const qMatrix<T, N, N>& X, qMatrix<T, N, N>& D, qMatrix<T, N, N>& V, int n = 50)
+template<typename T, int N> CUDA_FUNC_IN void qrAlgorithmSymmetric(const qMatrix<T, N, N>& X, qMatrix<T, N, 1>& D, qMatrix<T, N, N>& V, int n = 50)
 {
+	assert(X.is_symmetric());
 	//using Wilkinson shifts
 	V.id();
 	qMatrix<T, N, N> X_i = X, I = qMatrix<T, N, N>::Id();
@@ -83,7 +84,7 @@ template<typename T, int N> CUDA_FUNC_IN void qrAlgorithmSymmetric(const qMatrix
 		X_i = R_i * Q_i + kappa * I;
 		V = V * Q_i;
 	}
-	D = X_i;
+	D = diag<qMatrix<T, N, 1>>(X_i);
 }
 
 namespace __qrAlgorithm__
@@ -121,7 +122,7 @@ template<typename T, int N> CUDA_FUNC_IN int qrAlgorithm(const qMatrix<T, N, N>&
 		}
 		else
 		{
-			V.col(n_eig_counter, eigVec);
+			V.col(n_eig_counter, eigVec.num_negative_elements() > N / 2 ? -eigVec : eigVec);
 			n_eig_counter++;
 		}
 	}
@@ -130,7 +131,7 @@ template<typename T, int N> CUDA_FUNC_IN int qrAlgorithm(const qMatrix<T, N, N>&
 	{
 		int minIdx = i;
 		for (int j = i + 1; j < n_eig_counter; j++)
-			if (D(j) < D(minIdx))
+			if (D(j) > D(minIdx))
 				minIdx = j;
 		if (minIdx != i)
 		{

@@ -714,6 +714,30 @@ public:
 		return is_upper_bidiagonal() || is_lower_bidiagonal();
 	}
 
+	CUDA_FUNC_IN bool is_zero() const
+	{
+		for (int i = 0; i < M; i++)
+			for (int j = 0; j < N; j++)
+				if (operator()(i, j) != 0)
+					return false;
+		return true;
+	}
+
+	CUDA_FUNC_IN bool is_orthogonal(const T& eps = T(1e-5f)) const
+	{
+		T l = (*this * this->transpose() - qMatrix<T, M, N>::Id()).p_norm(T(2));
+		return l < eps;
+	}
+
+	CUDA_FUNC_IN int num_negative_elements() const
+	{
+		int n = 0;
+		for (int i = 0; i < M; i++)
+			for (int j = 0; j < N; j++)
+				n += operator()(i, j) < 0;
+		return n;
+	}
+
 	template<typename U> CUDA_FUNC_IN qMatrix<U, M, N> convert()
 	{
 		qMatrix<U, M, N> res;
@@ -723,12 +747,12 @@ public:
 		return res;
 	}
 
-	template<typename U> operator qMatrix<U, M, N>()
+	template<typename U> CUDA_FUNC_IN operator qMatrix<U, M, N>()
 	{
 		return convert<U>();
 	}
 
-	operator T() const
+	CUDA_FUNC_IN operator T() const
 	{
 		static_assert(M == 1 && N == 1, "Matrix not of size 1x1!");
 		return operator()(0, 0);
@@ -763,13 +787,13 @@ public:
 	std::string ToString() const
 	{
 		std::stringstream str;
-		print(str);
+		Round(4).print(str);
 		return str.str();
 	}
 
 	std::string ToString(const std::string var_name) const
 	{
-		return var_name + " = \n" + ToString();
+		return var_name + " = \n" + Round(4).ToString();
 	}
 
 	friend std::ostream & operator<<(std::ostream &os, const qMatrix<T, M, N>& p)
