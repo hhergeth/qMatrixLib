@@ -123,13 +123,17 @@ template<typename T, int N> struct VEC : public MAT<T, N, 1>
 {
 };
 
+#ifndef int64
+typedef long long int64;
+#endif
+
 #define MAKE_TYPEDEF(L, T) \
 	typedef MAT<T, L, 1> q##T##L;  \
 	typedef MAT<T, L, L> q##T##L##x##L; 
 
 #define MAKE_ALL_TYPEDEFS(L) \
 	MAKE_TYPEDEF(L, int) \
-	MAKE_TYPEDEF(L, __int64) \
+	MAKE_TYPEDEF(L, int64) \
 	MAKE_TYPEDEF(L, float) \
 	MAKE_TYPEDEF(L, double)
 

@@ -914,7 +914,7 @@ template<typename VEC> CUDA_FUNC_IN VEC linspace(const typename VEC::ELEMENT_TYP
 {
 	typename VEC::ELEMENT_TYPE f = (end - start) / n;
 	VEC res;
-	for (int i = 0; i < N; i++)
+	for (int i = 0; i < VEC::DIM; i++)
 		res(i) = start + f * i;
 	return res;
 }
