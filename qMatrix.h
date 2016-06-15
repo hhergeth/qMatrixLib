@@ -106,7 +106,10 @@ public:
 	}
 };
 
-template<typename T, int M, int N> struct qMatrix
+
+template<typename T, int M, int N> using VAL_STORAGE = MatrixDataStorage_Value<T, M, N>;
+
+template<typename T, int M, int N, typename STORAGE = MatrixDataStorage_Value<T, M, N>> struct qMatrix
 {
 private:
 	MatrixDataStorage_Value<T, M, N> m_storage;
@@ -120,11 +123,18 @@ public:
 	};
 
 	typedef T ELEMENT_TYPE;
+	typedef STORAGE STORAGE_TYPE;
 
 	typedef qMatrix<T, M, 1> COL_TYPE;
 	typedef qMatrix<T, 1, N> ROW_TYPE;
 
-	CUDA_FUNC_IN qMatrix<T, M, N>()
+	CUDA_FUNC_IN qMatrix<T, M, N, STORAGE>()
+	{
+
+	}
+
+	CUDA_FUNC_IN qMatrix<T, M, N, STORAGE>(const STORAGE& storage)
+		: m_storage(storage)
 	{
 
 	}
@@ -379,7 +389,7 @@ public:
 		return r;
 	}
 
-	template<int R> CUDA_FUNC_IN qMatrix<T, M, N + R> JoinHorizontal(const qMatrix<T, M, R>& rhs) const
+	template<int R, typename S2> CUDA_FUNC_IN qMatrix<T, M, N + R> JoinHorizontal(const qMatrix<T, M, R, S2>& rhs) const
 	{
 		qMatrix<T, M, N + R> res;
 		for (int i = 0; i < M; i++)
@@ -388,7 +398,7 @@ public:
 		return res;
 	}
 
-	template<int R> CUDA_FUNC_IN qMatrix<T, M + R, N> JoinVertical(const qMatrix<T, R, N>& rhs) const
+	template<int R, typename S2> CUDA_FUNC_IN qMatrix<T, M + R, N> JoinVertical(const qMatrix<T, R, N, S2>& rhs) const
 	{
 		qMatrix<T, M + R, N> res;
 		for (int i = 0; i < M + R; i++)
@@ -397,7 +407,7 @@ public:
 		return res;
 	}
 
-	CUDA_FUNC_IN qMatrix<T, M, N> MulElement(const qMatrix<T, M, N>& rhs) const
+	template<typename S2> CUDA_FUNC_IN qMatrix<T, M, N> MulElement(const qMatrix<T, M, N, S2>& rhs) const
 	{
 		qMatrix<T, M, N> r;
 		for (int i = 0; i < M; i++)
@@ -406,7 +416,7 @@ public:
 		return r;
 	}
 
-	CUDA_FUNC_IN qMatrix<T, M, N> DivElement(const qMatrix<T, M, N>& rhs) const
+	template<typename S2> CUDA_FUNC_IN qMatrix<T, M, N> DivElement(const qMatrix<T, M, N, S2>& rhs) const
 	{
 		qMatrix<T, M, N> r;
 		for (int i = 0; i < M; i++)
@@ -781,14 +791,14 @@ public:
 		return var_name + " = \n" + Round(4).ToString();
 	}
 
-	friend std::ostream & operator<<(std::ostream &os, const qMatrix<T, M, N>& p)
+	friend std::ostream & operator<<(std::ostream &os, const qMatrix<T, M, N, STORAGE>& p)
 	{
 		p.Round(3).print(os);
 		return os;
 	}
 };
 
-template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator+(qMatrix<T, M, N> const& lhs, qMatrix<T, M, N> const& rhs)
+template<typename T, int M, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, M, N> operator+(qMatrix<T, M, N, S1> const& lhs, qMatrix<T, M, N, S2> const& rhs)
 {
 	qMatrix<T, M, N> r;
 	for (int i = 0; i < M; i++)
@@ -797,7 +807,7 @@ template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator+(qMatr
 	return r;
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator-(qMatrix<T, M, N> const& lhs, qMatrix<T, M, N> const& rhs)
+template<typename T, int M, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, M, N> operator-(qMatrix<T, M, N, S1> const& lhs, qMatrix<T, M, N, S2> const& rhs)
 {
 	qMatrix<T, M, N> r;
 	for (int i = 0; i < M; i++)
@@ -806,7 +816,7 @@ template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator-(qMatr
 	return r;
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator+(qMatrix<T, M, N> const& lhs, T const& rhs)
+template<typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, M, N> operator+(qMatrix<T, M, N, S1> const& lhs, T const& rhs)
 {
 	qMatrix<T, M, N> r;
 	for (int i = 0; i < M; i++)
@@ -815,7 +825,7 @@ template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator+(qMatr
 	return r;
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator-(qMatrix<T, M, N> const& lhs, T const& rhs)
+template<typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, M, N> operator-(qMatrix<T, M, N, S1> const& lhs, T const& rhs)
 {
 	qMatrix<T, M, N> r;
 	for (int i = 0; i < M; i++)
@@ -824,7 +834,7 @@ template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator-(qMatr
 	return r;
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator*(qMatrix<T, M, N> const& lhs, const T& rhs)
+template<typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, M, N> operator*(qMatrix<T, M, N, S1> const& lhs, const T& rhs)
 {
 	qMatrix<T, M, N> r;
 	for (int i = 0; i < M; i++)
@@ -833,17 +843,17 @@ template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator*(qMatr
 	return r;
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator/(qMatrix<T, M, N> const& lhs, const T& rhs)
+template<typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, M, N> operator/(qMatrix<T, M, N, S1> const& lhs, const T& rhs)
 {
 	return lhs * (T(1.0) / rhs);
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> operator*(const T& lhs, const qMatrix<T, M, N>& rhs)
+template<typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, M, N> operator*(const T& lhs, const qMatrix<T, M, N, S1>& rhs)
 {
 	return rhs * lhs;
 }
 
-template<typename T, int M, int N, int R> CUDA_FUNC_IN qMatrix<T, M, R> operator*(qMatrix<T, M, N> const& lhs, qMatrix<T, N, R> const& rhs)
+template<typename T, int M, int N, int R, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, M, R> operator*(qMatrix<T, M, N, S1> const& lhs, qMatrix<T, N, R, S2> const& rhs)
 {
 	qMatrix<T, M, R> r;
 	for (int i = 0; i < M; i++)
@@ -857,7 +867,7 @@ template<typename T, int M, int N, int R> CUDA_FUNC_IN qMatrix<T, M, R> operator
 	return r;
 }
 
-template<typename VEC, int M, int N>  CUDA_FUNC_IN VEC diag(const qMatrix<typename VEC::ELEMENT_TYPE, M, N>& A)
+template<typename VEC, int M, int N, typename S1>  CUDA_FUNC_IN VEC diag(const qMatrix<typename VEC::ELEMENT_TYPE, M, N, S1>& A)
 {
 	VEC res;
 	for (int i = 0; i < VEC::SIZE::DIM; i++)
@@ -865,7 +875,7 @@ template<typename VEC, int M, int N>  CUDA_FUNC_IN VEC diag(const qMatrix<typena
 	return res;
 }
 
-template<typename VEC, int M, int N> CUDA_FUNC_IN void diag(qMatrix<typename VEC::ELEMENT_TYPE, M, N>& A, const VEC& d)
+template<typename VEC, int M, int N, typename S1> CUDA_FUNC_IN void diag(qMatrix<typename VEC::ELEMENT_TYPE, M, N, S1>& A, const VEC& d)
 {
 	for (int i = 0; i < VEC::SIZE::DIM; i++)
 		A(i, i) = d(i);
@@ -879,7 +889,7 @@ template<typename VEC> CUDA_FUNC_IN qMatrix<typename VEC::ELEMENT_TYPE, VEC::SIZ
 	return res;
 }
 
-template<typename T, int M, int N, int L> CUDA_FUNC_IN qMatrix<T, M, N> diagmat(const qMatrix<T, L, 1>& diag)
+template<typename T, int M, int N, int L, typename S1> CUDA_FUNC_IN qMatrix<T, M, N> diagmat(const qMatrix<T, L, 1, S1>& diag)
 {
 	qMatrix<T, M, N> res;
 	res.zero();
@@ -916,53 +926,53 @@ template<typename VEC> CUDA_FUNC_IN typename VEC::ELEMENT_TYPE norm(const VEC& v
 
 namespace __kronecker_product__
 {
-	template<typename T, int M, int N, int P, int R, int i, int j> struct loop
+	template<typename T, int M, int N, int P, int R, int i, int j, typename S1, typename S2, typename S3> struct loop
 	{
-		CUDA_FUNC_IN static void exec(const qMatrix<T, M, N>& lhs, const qMatrix<T, P, R>& rhs, qMatrix<T, M * P, N * R>& res)
+		CUDA_FUNC_IN static void exec(const qMatrix<T, M, N, S1>& lhs, const qMatrix<T, P, R, S2>& rhs, qMatrix<T, M * P, N * R, S3>& res)
 		{
 			res.submat<P * i, R * j, P * (i + 1) - 1, R * (j + 1) - 1>(lhs(i, j) * rhs);
-			loop<T, M, N, P, R, i + 1, j>::exec(lhs, rhs, res);
+			loop<T, M, N, P, R, i + 1, j, S1, S2, S3>::exec(lhs, rhs, res);
 		}
 	};
 
-	template<typename T, int M, int N, int P, int R, int j> struct loop<T, M, N, P, R, M, j>
+	template<typename T, int M, int N, int P, int R, int j, typename S1, typename S2, typename S3> struct loop<T, M, N, P, R, M, j, S1, S2, S3>
 	{
-		CUDA_FUNC_IN static void exec(const qMatrix<T, M, N>& lhs, const qMatrix<T, P, R>& rhs, qMatrix<T, M * P, N * R>& res)
+		CUDA_FUNC_IN static void exec(const qMatrix<T, M, N, S1>& lhs, const qMatrix<T, P, R, S2>& rhs, qMatrix<T, M * P, N * R, S3>& res)
 		{
 
 		}
 	};
 
-	template<typename T, int M, int N, int P, int R, int COL> struct loopStarter
+	template<typename T, int M, int N, int P, int R, int COL, typename S1, typename S2, typename S3> struct loopStarter
 	{
-		CUDA_FUNC_IN static void exec(const qMatrix<T, M, N>& lhs, const qMatrix<T, P, R>& rhs, qMatrix<T, M * P, N * R>& res)
+		CUDA_FUNC_IN static void exec(const qMatrix<T, M, N, S1>& lhs, const qMatrix<T, P, R, S2>& rhs, qMatrix<T, M * P, N * R, S3>& res)
 		{
-			loop<T, M, N, P, R, 0, COL>::exec(lhs, rhs, res);
-			loopStarter<T, M, N, P, R, COL + 1>::exec(lhs, rhs, res);
+			loop<T, M, N, P, R, 0, COL, S1, S2, S3>::exec(lhs, rhs, res);
+			loopStarter<T, M, N, P, R, COL + 1, S1, S2, S3>::exec(lhs, rhs, res);
 		}
 	};
 
-	template<typename T, int M, int N, int P, int R> struct loopStarter<T, M, N, P, R, N>
+	template<typename T, int M, int N, int P, int R, typename S1, typename S2, typename S3> struct loopStarter<T, M, N, P, R, N, S1, S2, S3>
 	{
-		CUDA_FUNC_IN static void exec(const qMatrix<T, M, N>& lhs, const qMatrix<T, P, R>& rhs, qMatrix<T, M * P, N * R>& res)
+		CUDA_FUNC_IN static void exec(const qMatrix<T, M, N, S1>& lhs, const qMatrix<T, P, R, S2>& rhs, qMatrix<T, M * P, N * R, S3>& res)
 		{
 		}
 	};
 }
-template<typename T, int M, int N, int P, int R> CUDA_FUNC_IN qMatrix<T, M * P, N * R> kronecker_product(const qMatrix<T, M, N>& lhs, const qMatrix<T, P, R>& rhs)
+template<typename T, int M, int N, int P, int R, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, M * P, N * R> kronecker_product(const qMatrix<T, M, N, S1>& lhs, const qMatrix<T, P, R, S2>& rhs)
 {
 	qMatrix<T, M * P, N * R> res;
 	res.id();
-	__kronecker_product__::loopStarter<T, M, N, P, R, 0>::exec(lhs, rhs, res);
+	__kronecker_product__::loopStarter<T, M, N, P, R, 0, S1, S2, typename decltype(res)::STORAGE_TYPE>::exec(lhs, rhs, res);
 	return res;
 }
 
-template<typename T, int N> CUDA_FUNC_IN bool is_tridiagonal(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN bool is_tridiagonal(const qMatrix<T, N, N, S1>& A)
 {
 	return is_upper_hessenberg(A) && is_lower_hessenberg(A);
 }
 
-template<typename T, int N> CUDA_FUNC_IN bool is_upper_hessenberg(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN bool is_upper_hessenberg(const qMatrix<T, N, N, S1>& A)
 {
 	for (int i = 2; i < N; i++)
 		for (int j = 0; j < i - 1; j++)
@@ -971,7 +981,7 @@ template<typename T, int N> CUDA_FUNC_IN bool is_upper_hessenberg(const qMatrix<
 	return true;
 }
 
-template<typename T, int N> CUDA_FUNC_IN bool is_lower_hessenberg(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN bool is_lower_hessenberg(const qMatrix<T, N, N, S1>& A)
 {
 	for (int j = 2; j < N; j++)
 		for (int i = 0; i < j - 1; i++)
@@ -981,7 +991,7 @@ template<typename T, int N> CUDA_FUNC_IN bool is_lower_hessenberg(const qMatrix<
 }
 
 //interpret A as symmetric mat, copying upper to lower
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> symmatu(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, N> symmatu(const qMatrix<T, N, N, S1>& A)
 {
 	qMatrix<T, N, N> res = A;
 	for (int i = 1; i < N; i++)
@@ -991,7 +1001,7 @@ template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> symmatu(const qMatrix<
 }
 
 //interpret A as symmetric mat, copying lower to upper
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> symmatl(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, N> symmatl(const qMatrix<T, N, N, S1>& A)
 {
 	qMatrix<T, N, N> res = A;
 	for (int j = 1; j < N; j++)
@@ -1001,7 +1011,7 @@ template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> symmatl(const qMatrix<
 }
 
 //interpret square matrix A as upper triangular
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> trimatu(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, N> trimatu(const qMatrix<T, N, N, S1>& A)
 {
 	qMatrix<T, N, N> res = A;
 	for (int i = 1; i < N; i++)
@@ -1011,7 +1021,7 @@ template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> trimatu(const qMatrix<
 }
 
 //interpret square matrix A as lower triangular
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> trimatl(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, N> trimatl(const qMatrix<T, N, N, S1>& A)
 {
 	qMatrix<T, N, N> res = A;
 	for (int j = 1; j < N; j++)
@@ -1021,7 +1031,7 @@ template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> trimatl(const qMatrix<
 }
 
 //interpret square matrix A as tridiagonal
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> tridiag(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, N> tridiag(const qMatrix<T, N, N, S1>& A)
 {
 	qMatrix<T, N, N> res = A;
 	for (int j = 1; j < N; j++)
@@ -1034,12 +1044,12 @@ template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> tridiag(const qMatrix<
 }
 
 
-template<typename T, int N> CUDA_FUNC_IN T trace(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN T trace(const qMatrix<T, N, N, S1>& A)
 {
 	return A.diag().accu();
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> minimize(const qMatrix<T, M, N>& A, const qMatrix<T, M, N>& B)
+template<typename T, int M, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, M, N> minimize(const qMatrix<T, M, N, S1>& A, const qMatrix<T, M, N, S2>& B)
 {
 	qMatrix<T, M, N> res;
 	for (int i = 0; i < M; i++)
@@ -1048,7 +1058,7 @@ template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> minimize(const 
 	return res;
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> maximize(const qMatrix<T, M, N>& A, const qMatrix<T, M, N>& B)
+template<typename T, int M, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, M, N> maximize(const qMatrix<T, M, N, S1>& A, const qMatrix<T, M, N, S2>& B)
 {
 	qMatrix<T, M, N> res;
 	for (int i = 0; i < M; i++)

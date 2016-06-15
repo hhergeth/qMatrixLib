@@ -8,7 +8,7 @@
 
 namespace __svd__
 {
-	template<typename T, int M, int N> CUDA_FUNC_IN void givensL(qMatrix<T, M, N>& S, int m, const T& a, const T& b)
+	template<typename T, int M, int N, typename S1> CUDA_FUNC_IN void givensL(qMatrix<T, M, N, S1>& S, int m, const T& a, const T& b)
 	{
 		T r = sqrt(a*a + b*b);
 		T c = a / r;
@@ -26,7 +26,7 @@ namespace __svd__
 		}
 	}
 
-	template<typename T, int M, int N> CUDA_FUNC_IN void givensR(qMatrix<T, M, N>& S, int m, const T& a, const T& b)
+	template<typename T, int M, int N, typename S1> CUDA_FUNC_IN void givensR(qMatrix<T, M, N, S1>& S, int m, const T& a, const T& b)
 	{
 		T r = sqrt(a*a + b*b);
 		T c = a / r;
@@ -45,7 +45,7 @@ namespace __svd__
 	}
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN void svd(const qMatrix<T, M, N>& A, qMatrix<T, M, M>& U, qMatrix<T, N, N>& V, qMatrix<T, M, N>& S, T eps = T(-1))
+template<typename T, int M, int N, typename S1, typename S2, typename S3, typename S4> CUDA_FUNC_IN void svd(const qMatrix<T, M, N, S1>& A, qMatrix<T, M, M, S2>& U, qMatrix<T, N, N, S3>& V, qMatrix<T, M, N, S4>& S, T eps = T(-1))
 {
 	qMatrix<T, M, N> B = A;
 	U = qMatrix<T, M, M>::Id();
@@ -85,7 +85,7 @@ template<typename T, int M, int N> CUDA_FUNC_IN void svd(const qMatrix<T, M, N>&
 	V = V * V2;
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, N, M> pseudoinverse(const qMatrix<T, M, N>& A)
+template<typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, M> pseudoinverse(const qMatrix<T, M, N, S1>& A)
 {
 	qMatrix<T, M, M> U;
 	qMatrix<T, N, N> V;
@@ -98,7 +98,7 @@ template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, N, M> pseudoinverse(c
 }
 
 //general purpose
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> inv(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, N> inv(const qMatrix<T, N, N, S1>& A)
 {
 	qMatrix<T, N, N> L, U, P, I;
 	luDecomposition(A, P, L, U);
@@ -107,7 +107,7 @@ template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, N> inv(const qMatrix<T, N
 	return I;
 }
 
-template<typename T, int N> CUDA_FUNC_IN T det(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN T det(const qMatrix<T, N, N, S1>& A)
 {
 	qMatrix<T, N, N> L, U, P;
 	luDecomposition(A, P, L, U);
@@ -117,7 +117,7 @@ template<typename T, int N> CUDA_FUNC_IN T det(const qMatrix<T, N, N>& A)
 	return det;
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> null(const qMatrix<T, N, M>& A, int& rank, const T& eps = T(1e-5) * DMAX2(M, N))
+template<typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, M, N> null(const qMatrix<T, N, M, S1>& A, int& rank, const T& eps = T(1e-5) * DMAX2(M, N))
 {
 	qMatrix<T, M, M> U;
 	qMatrix<T, N, N> V;
@@ -136,27 +136,27 @@ template<typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, N> null(const qMat
 	return nul;
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN int rank(const qMatrix<T, M, N>& A)
+template<typename T, int M, int N, typename S1> CUDA_FUNC_IN int rank(const qMatrix<T, M, N, S1>& A)
 {
 	int r;
 	null(A, r);
 	return r;
 }
 
-template<typename T, int N> CUDA_FUNC_IN void eig(const qMatrix<T, N, N>& A, qMatrix<T, N, N>& values, qMatrix<T, N, N>& vectors)
+template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN void eig(const qMatrix<T, N, N, S1>& A, qMatrix<T, N, N, S2>& values, qMatrix<T, N, N, S3>& vectors)
 {
 	qrAlgorithm(A, values, vectors);
 	values = diagmat(values.diag());
 }
 
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, 1> eig(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, 1> eig(const qMatrix<T, N, N, S1>& A)
 {
 	qMatrix<T, N, N> values, vectors;
 	eig(A, values, vectors);
 	return values.diag();
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN T cond(const qMatrix<T, M, N>& A)
+template<typename T, int M, int N, typename S1> CUDA_FUNC_IN T cond(const qMatrix<T, M, N, S1>& A)
 {
 	qMatrix<T, M, M> U;
 	qMatrix<T, N, N> V;
@@ -171,7 +171,7 @@ template<typename T, int M, int N> CUDA_FUNC_IN T cond(const qMatrix<T, M, N>& A
 	return la / sm;
 }
 
-template<typename T, int N> CUDA_FUNC_IN T cond(const qMatrix<T, N, N>& A)
+template<typename T, int N, typename S1> CUDA_FUNC_IN T cond(const qMatrix<T, N, N, S1>& A)
 {
 	return A.p_norm(T(2)) * inv(A).p_norm(T(2));
 }

@@ -7,7 +7,7 @@
 
 namespace __qrHousholder__
 {
-	template<typename T, int M> CUDA_FUNC_IN qMatrix<T, M, 1> householder(const qMatrix<T, M, 1>& a)
+	template<typename T, int M, typename S1> CUDA_FUNC_IN qMatrix<T, M, 1> householder(const qMatrix<T, M, 1, S1>& a)
 	{
 		qMatrix<T, M, 1> e = ::e<qMatrix<T, M, 1>>(0), u, v;
 		T alpha = qMatrix_sgn(a(0, 0)) * a.p_norm(T(2));
@@ -16,7 +16,7 @@ namespace __qrHousholder__
 		return v;
 	}
 
-	template<bool UPPER = true, typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, M, 1> householderCol(const qMatrix<T, M, N>& A, int k, int off = 0)
+	template<bool UPPER = true, typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, M, 1> householderCol(const qMatrix<T, M, N, S1>& A, int k, int off = 0)
 	{
 		qMatrix<T, M, 1> a = A.col(k), e = ::e<qMatrix<T, M, 1>>(k + off), u, v;
 		if (a.accu() == a(0))
@@ -34,7 +34,7 @@ namespace __qrHousholder__
 		return v;
 	}
 
-	template<bool UPPER = true, typename T, int M, int N> CUDA_FUNC_IN qMatrix<T, 1, N> householderRow(const qMatrix<T, M, N>& A, int k, int off = 0)
+	template<bool UPPER = true, typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, 1, N> householderRow(const qMatrix<T, M, N, S1>& A, int k, int off = 0)
 	{
 		qMatrix<T, 1, N> a = A.row(k), e = ::e<qMatrix<T, 1, N>>(k + off), u, v;
 		if (a.accu() == a(0))
@@ -53,7 +53,7 @@ namespace __qrHousholder__
 	}
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN void qrHousholder(const qMatrix<T, M, N>& A, qMatrix<T, M, M>& Q, qMatrix<T, M, N>& R)
+template<typename T, int M, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN void qrHousholder(const qMatrix<T, M, N, S1>& A, qMatrix<T, M, M, S2>& Q, qMatrix<T, M, N, S3>& R)
 {
 	Q.id();
 	R = A;
@@ -67,7 +67,7 @@ template<typename T, int M, int N> CUDA_FUNC_IN void qrHousholder(const qMatrix<
 	}
 }
 
-template<typename T, int M, int N> CUDA_FUNC_IN void qrGivens(const qMatrix<T, M, N>& A, qMatrix<T, M, M>& Q, qMatrix<T, M, N>& R)
+template<typename T, int M, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN void qrGivens(const qMatrix<T, M, N, S1>& A, qMatrix<T, M, M, S2>& Q, qMatrix<T, M, N, S3>& R)
 {
 	Q.id();
 	R = A;
@@ -113,7 +113,7 @@ template<typename T, int M, int N> CUDA_FUNC_IN void qrGivens(const qMatrix<T, M
 		}
 }
 
-template<typename T, int N> CUDA_FUNC_IN void luDecomposition(const qMatrix<T, N, N>& A, qMatrix<T, N, N>& P, qMatrix<T, N, N>& L, qMatrix<T, N, N>& U)
+template<typename T, int N, typename S1, typename S2, typename S3, typename S4> CUDA_FUNC_IN void luDecomposition(const qMatrix<T, N, N, S1>& A, qMatrix<T, N, N, S2>& P, qMatrix<T, N, N, S3>& L, qMatrix<T, N, N, S4>& U)
 {
 	qMatrix<T, N, N> LR = A;
 	int p[N];
@@ -150,7 +150,7 @@ template<typename T, int N> CUDA_FUNC_IN void luDecomposition(const qMatrix<T, N
 		P(i, p[i]) = 1;
 }
 
-template<typename VEC> CUDA_FUNC_IN VEC solveUpperDiagonal(const qMatrix<typename VEC::ELEMENT_TYPE, VEC::SIZE::DIM, VEC::SIZE::DIM>& U, const VEC& rhs)
+template<typename VEC, typename S1> CUDA_FUNC_IN VEC solveUpperDiagonal(const qMatrix<typename VEC::ELEMENT_TYPE, VEC::SIZE::DIM, VEC::SIZE::DIM, S1>& U, const VEC& rhs)
 {
 	VEC r;
 	for (int i = VEC::SIZE::DIM - 1; i >= 0; i--)
@@ -163,7 +163,7 @@ template<typename VEC> CUDA_FUNC_IN VEC solveUpperDiagonal(const qMatrix<typenam
 	return r;
 }
 
-template<typename VEC> CUDA_FUNC_IN VEC solveLowerDiagonal(const qMatrix<typename VEC::ELEMENT_TYPE, VEC::SIZE::DIM, VEC::SIZE::DIM>& L, const VEC& rhs)
+template<typename VEC, typename S1> CUDA_FUNC_IN VEC solveLowerDiagonal(const qMatrix<typename VEC::ELEMENT_TYPE, VEC::SIZE::DIM, VEC::SIZE::DIM, S1>& L, const VEC& rhs)
 {
 	VEC r;
 	for (int i = 0; i < VEC::SIZE::DIM; i++)
@@ -176,27 +176,27 @@ template<typename VEC> CUDA_FUNC_IN VEC solveLowerDiagonal(const qMatrix<typenam
 	return r;
 }
 
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, 1> solve(const qMatrix<T, N, N>& P, const qMatrix<T, N, N>& L, const qMatrix<T, N, N>& U, const qMatrix<T, N, 1>& rhs)
+template<typename T, int N, typename S1, typename S2, typename S3, typename S4> CUDA_FUNC_IN qMatrix<T, N, 1> solve(const qMatrix<T, N, N, S1>& P, const qMatrix<T, N, N, S2>& L, const qMatrix<T, N, N, S3>& U, const qMatrix<T, N, 1, S4>& rhs)
 {
 	qMatrix<T, N, 1> b = P * rhs;
 	qMatrix<T, N, 1> d = solveLowerDiagonal(L, b);
 	return solveUpperDiagonal(U, d);
 }
 
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, 1> solve(const qMatrix<T, N, N>& Q, const qMatrix<T, N, N>& R, const qMatrix<T, N, 1>& rhs)
+template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN qMatrix<T, N, 1> solve(const qMatrix<T, N, N, S1>& Q, const qMatrix<T, N, N, S2>& R, const qMatrix<T, N, 1, S3>& rhs)
 {
 	qMatrix<T, N, 1> b = Q.Transpose() * rhs;
 	return solveUpperDiagonal(R, b);
 }
 
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, 1> solve(const qMatrix<T, N, N>& A, const qMatrix<T, N, 1>& rhs)
+template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N, 1> solve(const qMatrix<T, N, N, S1>& A, const qMatrix<T, N, 1, S2>& rhs)
 {
 	qMatrix<T, N, N> L, U, P;
 	luDecomposition(A, P, L, U);
 	return solve(P, L, U, rhs);
 }
 
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, 1> conjugate_gradient(const qMatrix<T, N, N>& A, const qMatrix<T, N, 1>& rhs, int n = 100)
+template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N, 1> conjugate_gradient(const qMatrix<T, N, N, S1>& A, const qMatrix<T, N, 1, S2>& rhs, int n = 100)
 {
 	qMatrix<T, N, 1> x;
 	x.zero();
@@ -219,7 +219,7 @@ template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, 1> conjugate_gradient(con
 	return x;
 }
 
-template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, 1> tridiag_solve(const qMatrix<T, N, N>& A, const qMatrix<T, N, 1>& rhs)
+template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N, 1> tridiag_solve(const qMatrix<T, N, N, S1>& A, const qMatrix<T, N, 1, S2>& rhs)
 {
 	assert(is_tridiagonal(A));
 	qMatrix<T, N, 1> c_d, d_d;

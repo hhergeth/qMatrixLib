@@ -3,7 +3,7 @@
 #include "qMatrix.h"
 #include "qLinearSolver.h"
 
-template<typename T> CUDA_FUNC_IN void eig2x2(const qMatrix<T, 2, 2>& A, T& l1, T& l2)
+template<typename T, typename S1> CUDA_FUNC_IN void eig2x2(const qMatrix<T, 2, 2, S1>& A, T& l1, T& l2)
 {
 	int N = 2;
 	T a = A(N - 2, N - 2), b = A(N - 2, N - 1), c = A(N - 1, N - 2), d = A(N - 1, N - 1), p = -a - d, q = a * d - b * c;
@@ -20,9 +20,9 @@ template<typename T> CUDA_FUNC_IN void eig2x2(const qMatrix<T, 2, 2>& A, T& l1, 
 
 namespace __hessenbergReduction__
 {
-	template<typename T, int N, int i> struct loop
+	template<typename T, int N, int i, typename S1, typename S2> struct loop
 	{
-		CUDA_FUNC_IN static void exec(qMatrix<T, N, N>& A, qMatrix<T, N, N>& Q)
+		CUDA_FUNC_IN static void exec(qMatrix<T, N, N, S1>& A, qMatrix<T, N, N, S2>& Q)
 		{
 			if (i < N - 2)
 			{
@@ -42,28 +42,28 @@ namespace __hessenbergReduction__
 				//A.submat<i + 2, i, N - 1, i>() = qMatrix<T, N - i - 2, 1>::Zero();
 				//A.submat<0, i + 1, N - 1, N - 1>(A.submat<0, i + 1, N - 1, N - 1>() - T(2) * (A.submat<0, i + 1, N - 1, N - 1>() * v) * v.transpose());
 				
-				loop<T, N, i + 1>::exec(A, Q);
+				loop<T, N, i + 1, S1, S2>::exec(A, Q);
 			}
 		}
 	};
-	template<typename T, int N> struct loop<T, N, N>
+	template<typename T, int N, typename S1, typename S2> struct loop<T, N, N, S1, S2>
 	{
-		CUDA_FUNC_IN static void exec(qMatrix<T, N, N>& A, qMatrix<T, N, N>& Q)
+		CUDA_FUNC_IN static void exec(qMatrix<T, N, N, S1>& A, qMatrix<T, N, N, S2>& Q)
 		{
 
 		}
 	};
 }
 
-template<typename T, int N> CUDA_FUNC_IN void hessenbergReduction(const qMatrix<T, N, N>& A, qMatrix<T, N, N>& H, qMatrix<T, N, N>& Q)
+template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN void hessenbergReduction(const qMatrix<T, N, N, S1>& A, qMatrix<T, N, N, S2>& H, qMatrix<T, N, N, S3>& Q)
 {
 	H = A;
 	Q.id();
-	__hessenbergReduction__::loop<T, N, 0>::exec(H, Q);
+	__hessenbergReduction__::loop<T, N, 0, S1, S2>::exec(H, Q);
 }
 
 //X has to be symmetric and of full rank
-template<typename T, int N> CUDA_FUNC_IN void qrAlgorithmSymmetric(const qMatrix<T, N, N>& X, qMatrix<T, N, 1>& D, qMatrix<T, N, N>& V, int n = 50)
+template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN void qrAlgorithmSymmetric(const qMatrix<T, N, N, S1>& X, qMatrix<T, N, 1, S2>& D, qMatrix<T, N, N, S3>& V, int n = 50)
 {
 	assert(X.is_symmetric());
 	//using Wilkinson shifts
@@ -89,14 +89,14 @@ template<typename T, int N> CUDA_FUNC_IN void qrAlgorithmSymmetric(const qMatrix
 
 namespace __qrAlgorithm__
 {
-	template<typename T, int N> CUDA_FUNC_IN qMatrix<T, N, 1> inversePowerMethod(const qMatrix<T, N, N>& A, const T& lambda)
+	template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, 1> inversePowerMethod(const qMatrix<T, N, N, S1>& A, const T& lambda)
 	{
 		qMatrix<T, N, 1> w = solve(A - lambda * qMatrix<T, N, N>::Id(), ::e<qMatrix<T, N, 1>>(0));
 		return w / w.p_norm(T(2));
 	}
 }
 
-template<typename T, int N> CUDA_FUNC_IN int qrAlgorithm(const qMatrix<T, N, N>& X, qMatrix<T, N, 1>& D, qMatrix<T, N, N>& V, int n = 50)
+template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN int qrAlgorithm(const qMatrix<T, N, N, S1>& X, qMatrix<T, N, 1, S2>& D, qMatrix<T, N, N, S3>& V, int n = 50)
 {
 	V.id();
 	qMatrix<T, N, N> X_i = X;

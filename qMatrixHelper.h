@@ -2,7 +2,7 @@
 
 #include "qMatrix.h"
 
-template<typename T, int M, int N> std::string ToWolframString(const qMatrix<T, M, N>& A)
+template<typename T, int M, int N, typename S1> std::string ToWolframString(const qMatrix<T, M, N, S1>& A)
 {
 	std::ostringstream stream;
 	stream << "{";
@@ -49,7 +49,7 @@ template<typename T, int M, int N> qMatrix<T, M, N> FromWolframString(const std:
 	return r;
 }
 
-template<typename T, int M, int N> std::string ToMatlabString(const qMatrix<T, M, N>& A)
+template<typename T, int M, int N, typename S1> std::string ToMatlabString(const qMatrix<T, M, N, S1>& A)
 {
 	std::ostringstream stream;
 	stream << "[";
