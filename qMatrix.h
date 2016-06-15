@@ -166,6 +166,8 @@ public:
 
 	CUDA_FUNC_IN T& operator()(int i, int j)
 	{
+		//in case there is an compiler error here(C2440) "cannot convert from const float to float&"
+		//the problem is trying to set element of an const matrix
 		return m_storage(i, j);
 	}
 
