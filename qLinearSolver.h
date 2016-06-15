@@ -18,7 +18,7 @@ namespace __qrHousholder__
 
 	template<bool UPPER = true, typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, M, 1> householderCol(const qMatrix<T, M, N, S1>& A, int k, int off = 0)
 	{
-		qMatrix<T, M, 1> a = A.col(k), e = ::e<qMatrix<T, M, 1>>(k + off), u, v;
+		qMatrix<T, M, 1> a = Clone(A.col(k)), e = ::e<qMatrix<T, M, 1>>(k + off), u, v;
 		if (a.accu() == a(0))
 			return a / a(0);
 		if (UPPER)
@@ -36,7 +36,7 @@ namespace __qrHousholder__
 
 	template<bool UPPER = true, typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, 1, N> householderRow(const qMatrix<T, M, N, S1>& A, int k, int off = 0)
 	{
-		qMatrix<T, 1, N> a = A.row(k), e = ::e<qMatrix<T, 1, N>>(k + off), u, v;
+		qMatrix<T, 1, N> a = Clone(A.row(k)), e = ::e<qMatrix<T, 1, N>>(k + off), u, v;
 		if (a.accu() == a(0))
 			return a / a(0);
 		if (UPPER)

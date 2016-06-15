@@ -118,11 +118,11 @@ template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN 
 		if (norm(diff) > T(1e-4))
 		{
 			D(j-1) = 0;
-			V.col(j-1, qMatrix<T, N, 1>::Zero());
+			V.col(j-1).zero();
 		}
 		else
 		{
-			V.col(n_eig_counter, eigVec.num_negative_elements() > N / 2 ? -eigVec : eigVec);
+			V.col(n_eig_counter) = eigVec.num_negative_elements() > N / 2 ? -eigVec : eigVec;
 			n_eig_counter++;
 		}
 	}

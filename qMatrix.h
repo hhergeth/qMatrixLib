@@ -58,7 +58,12 @@ template<typename T> CUDA_FUNC_IN T qMatrix_sqr(T val)
 	return val * val;
 }
 
-template<typename T, int M, int N> struct MatrixDataStorage_Value
+struct MatrixDataStorageBase
+{
+	
+};
+
+template<typename T, int M, int N> struct MatrixDataStorage_Value : public MatrixDataStorageBase
 {
 private:
 	T dat[DMAX2(M * N, 1)];
@@ -85,7 +90,7 @@ public:
 	}
 };
 
-template<typename MAT, typename T> struct MatrixDataStorage_Ref
+template<typename MAT, typename T> struct MatrixDataStorage_Ref : public MatrixDataStorageBase
 {
 private:
 	MAT& ref_mat;
@@ -98,21 +103,35 @@ public:
 	}
 	CUDA_FUNC_IN const T& operator()(int i, int j) const
 	{
-		return (T)ref_mat(off_i + i, off_j, j);
+		return (T)ref_mat(off_i + i, off_j + j);
 	}
 	CUDA_FUNC_IN T& operator()(int i, int j)
 	{
-		return ref_mat(off_i + i, off_j, j);
+		return ref_mat(off_i + i, off_j + j);
 	}
 };
 
+template<typename MAT, typename T> struct MatrixDataStorage_Ref_Const : public MatrixDataStorageBase
+{
+private:
+	const MAT& ref_mat;
+	int off_i, off_j;
+public:
+	CUDA_FUNC_IN MatrixDataStorage_Ref_Const(const MAT& ref, int off_i, int off_j)
+		: ref_mat(ref), off_i(off_i), off_j(off_j)
+	{
 
-template<typename T, int M, int N> using VAL_STORAGE = MatrixDataStorage_Value<T, M, N>;
+	}
+	CUDA_FUNC_IN const T& operator()(int i, int j) const
+	{
+		return (T)ref_mat(off_i + i, off_j + j);
+	}
+};
 
 template<typename T, int M, int N, typename STORAGE = MatrixDataStorage_Value<T, M, N>> struct qMatrix
 {
-private:
-	MatrixDataStorage_Value<T, M, N> m_storage;
+	static_assert(std::is_base_of<MatrixDataStorageBase, STORAGE>::value, "Storage type must be derived  from MatrixDataStorageBase!");
+	STORAGE m_storage;
 public:
 
 	enum SIZE
@@ -124,6 +143,7 @@ public:
 
 	typedef T ELEMENT_TYPE;
 	typedef STORAGE STORAGE_TYPE;
+	typedef qMatrix<T, M, N> MATRIX_TYPE_VAL;
 
 	typedef qMatrix<T, M, 1> COL_TYPE;
 	typedef qMatrix<T, 1, N> ROW_TYPE;
@@ -137,6 +157,16 @@ public:
 		: m_storage(storage)
 	{
 
+	}
+
+	CUDA_FUNC_IN const T& operator()(int i, int j) const
+	{
+		return m_storage(i, j);
+	}
+
+	CUDA_FUNC_IN T& operator()(int i, int j)
+	{
+		return m_storage(i, j);
 	}
 
 	CUDA_FUNC_IN static qMatrix<T, M, N> Zero()
@@ -213,16 +243,6 @@ public:
 				operator()(i, j) = val;
 	}
 
-	CUDA_FUNC_IN const T& operator()(int i, int j) const
-	{
-		return m_storage(i, j);
-	}
-
-	CUDA_FUNC_IN T& operator()(int i, int j)
-	{
-		return m_storage(i, j);
-	}
-
 	CUDA_FUNC_IN const T& operator()(int i) const
 	{
 		if (is_colvec())
@@ -285,71 +305,61 @@ public:
 		return N;
 	}
 
+private:
+	typedef MatrixDataStorage_Ref<qMatrix<T, M, N, STORAGE>, T> REF_STORAGE;
+	typedef MatrixDataStorage_Ref_Const<qMatrix<T, M, N, STORAGE>, T> REF_CONST_STORAGE;
+public:
 	//first_row, first_col, last_row, last_col
-	template<int p, int r, int q, int s> CUDA_FUNC_IN qMatrix<T, q - p + 1, s - r + 1> submat() const
+	template<int p, int r, int q, int s> CUDA_FUNC_IN qMatrix<T, q - p + 1, s - r + 1, REF_STORAGE> submat()
 	{
-		qMatrix<T, q - p + 1, s - r + 1> res;
-		for (int i = p; i <= q; i++)
-			for (int j = r; j <= s; j++)
-				res(i - p, j - r) = operator()(i, j);
-		return res;
+		return qMatrix<T, q - p + 1, s - r + 1, REF_STORAGE>(REF_STORAGE(*this, p, r));
 	}
 
-	template<int p, int r, int q, int s> CUDA_FUNC_IN void submat(const qMatrix<T, q - p + 1, s - r + 1>& sub)
+	template<int p, int r, int q, int s> CUDA_FUNC_IN qMatrix<T, q - p + 1, s - r + 1, REF_CONST_STORAGE> submat() const
 	{
-		for (int i = p; i <= q; i++)
-			for (int j = r; j <= s; j++)
-				operator()(i, j) = sub(i - p, j - r);
+		return qMatrix<T, q - p + 1, s - r + 1, REF_CONST_STORAGE>(REF_CONST_STORAGE(*this, p, r));
 	}
 
 	//selects columns ie p < M, q < M, p <= q
-	template<int p, int q> CUDA_FUNC_IN qMatrix<T, N, q - p + 1> cols() const
+	template<int p, int q> CUDA_FUNC_IN qMatrix<T, N, q - p + 1, REF_STORAGE> cols()
 	{
 		return submat<0, p, M, q>();
 	}
 
-	template<int p, int q> CUDA_FUNC_IN void cols(const qMatrix<T, N, q - p + 1>& cols)
+	template<int p, int q> CUDA_FUNC_IN qMatrix<T, N, q - p + 1, REF_CONST_STORAGE> cols() const
 	{
-		submat<0, p, M, q>(cols);
+		return submat<0, p, M, q>();
 	}
 
 	//selects rows ie r < N, s < N, r <= s
-	template<int r, int s> CUDA_FUNC_IN qMatrix<T, s - r + 1, M> rows() const
+	template<int r, int s> CUDA_FUNC_IN qMatrix<T, s - r + 1, M, REF_STORAGE> rows()
 	{
 		return submat<r, 0, s, N>();
 	}
 
-	template<int r, int s> CUDA_FUNC_IN  void rows(const qMatrix<T, s - r + 1, M>& rows)
+	template<int r, int s> CUDA_FUNC_IN qMatrix<T, s - r + 1, M, REF_CONST_STORAGE> rows() const
 	{
-		submat<r, 0, s, N>(rows);
+		return submat<r, 0, s, N>();
 	}
 
-	CUDA_FUNC_IN qMatrix<T, 1, N> row(int j) const
+	CUDA_FUNC_IN qMatrix<T, 1, N, REF_STORAGE> row(int i)
 	{
-		qMatrix<T, 1, N> r;
-		for (int k = 0; k < N; k++)
-			r(0, k) = operator()(j, k);
-		return r;
+		return qMatrix<T, 1, N, REF_STORAGE>(REF_STORAGE(*this, i, 0));
 	}
 
-	CUDA_FUNC_IN qMatrix<T, M, 1> col(int i) const
+	CUDA_FUNC_IN qMatrix<T, 1, N, REF_CONST_STORAGE> row(int i) const
 	{
-		qMatrix<T, M, 1> r;
-		for (int k = 0; k < M; k++)
-			r(k, 0) = operator()(k, i);
-		return r;
+		return qMatrix<T, 1, N, REF_CONST_STORAGE>(REF_CONST_STORAGE(*this, i, 0));
 	}
 
-	CUDA_FUNC_IN void row(int i, const qMatrix<T, 1, N>& r)
+	CUDA_FUNC_IN qMatrix<T, M, 1, REF_STORAGE> col(int j)
 	{
-		for (int j = 0; j < N; j++)
-			operator()(i, j) = r(0, j);
+		return qMatrix<T, M, 1, REF_STORAGE>(REF_STORAGE(*this, 0, j));
 	}
 
-	CUDA_FUNC_IN void col(int j, const qMatrix<T, M, 1>& c)
+	CUDA_FUNC_IN qMatrix<T, M, 1, REF_CONST_STORAGE> col(int j) const
 	{
-		for (int i = 0; i < M; i++)
-			operator()(i, j) = c(i, 0);
+		return qMatrix<T, M, 1, REF_CONST_STORAGE>(REF_CONST_STORAGE(*this, 0, j));
 	}
 
 	CUDA_FUNC_IN void swap_rows(int r, int s)
@@ -368,7 +378,7 @@ public:
 	{
 		qMatrix<T, M, N> res;
 		for (int j = 0; j < N; j++)
-			res.col(N - j - 1, col(j));
+			res.col(N - j - 1) = col(j);
 		return res;
 	}
 
@@ -376,7 +386,7 @@ public:
 	{
 		qMatrix<T, M, N> res;
 		for (int i = 0; i < M; i++)
-			res.row(M - i - 1, row(i));
+			res.row(M - i - 1) = row(i);
 		return res;
 	}
 
@@ -796,7 +806,33 @@ public:
 		p.Round(3).print(os);
 		return os;
 	}
+
+	template<typename S2> qMatrix<T, M, N, STORAGE>& operator= (const qMatrix<T, M, N, S2>& rhs)
+	{
+		for (int i = 0; i < M; i++)
+			for (int j = 0; j < N; j++)
+				operator()(i, j) = rhs(i, j);
+		return *this;
+	}
+
+	qMatrix<T, M, N, STORAGE>& operator= (const qMatrix<T, M, N, STORAGE>& rhs)
+	{
+		if(this != &rhs)
+		{
+			for (int i = 0; i < M; i++)
+				for (int j = 0; j < N; j++)
+					operator()(i, j) = rhs(i, j);
+		}
+		return *this;
+	}
 };
+
+template<typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, M, N> Clone(qMatrix<T, M, N, S1> const& lhs)
+{
+	qMatrix<T, M, N> res;
+	res = lhs;
+	return res;
+}
 
 template<typename T, int M, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, M, N> operator+(qMatrix<T, M, N, S1> const& lhs, qMatrix<T, M, N, S2> const& rhs)
 {
@@ -930,7 +966,7 @@ namespace __kronecker_product__
 	{
 		CUDA_FUNC_IN static void exec(const qMatrix<T, M, N, S1>& lhs, const qMatrix<T, P, R, S2>& rhs, qMatrix<T, M * P, N * R, S3>& res)
 		{
-			res.submat<P * i, R * j, P * (i + 1) - 1, R * (j + 1) - 1>(lhs(i, j) * rhs);
+			res.submat<P * i, R * j, P * (i + 1) - 1, R * (j + 1) - 1>() = lhs(i, j) * rhs;
 			loop<T, M, N, P, R, i + 1, j, S1, S2, S3>::exec(lhs, rhs, res);
 		}
 	};

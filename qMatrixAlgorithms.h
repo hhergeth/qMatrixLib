@@ -103,7 +103,7 @@ template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, N> inv(const
 	qMatrix<T, N, N> L, U, P, I;
 	luDecomposition(A, P, L, U);
 	for (int i = 0; i < N; i++)
-		I.col(i, solve(P, L, U, e<qMatrix<T, N, 1>>(i)));
+		I.col(i) = solve(P, L, U, e<qMatrix<T, N, 1>>(i));
 	return I;
 }
 
@@ -129,7 +129,7 @@ template<typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, M, N> nu
 	{
 		if (E(i, i) < eps)
 		{
-			nul.col(rank, V.col(i));
+			nul.col(rank) = V.col(i);
 			rank++;
 		}
 	}
