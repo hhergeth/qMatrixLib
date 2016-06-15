@@ -912,7 +912,7 @@ template<typename VEC> CUDA_FUNC_IN static VEC e(int i)
 
 template<typename VEC> CUDA_FUNC_IN VEC linspace(const typename VEC::ELEMENT_TYPE& start, const typename VEC::ELEMENT_TYPE& end, const typename VEC::ELEMENT_TYPE& n)
 {
-	typename VEC::ELEMENT_TYPE f = (end - start) / n;
+	typename VEC::ELEMENT_TYPE f = (end - start) / (n - 1);
 	VEC res;
 	for (int i = 0; i < VEC::DIM; i++)
 		res(i) = start + f * i;
@@ -921,7 +921,7 @@ template<typename VEC> CUDA_FUNC_IN VEC linspace(const typename VEC::ELEMENT_TYP
 
 template<typename VEC> CUDA_FUNC_IN VEC linspace(const typename VEC::ELEMENT_TYPE& start, const typename VEC::ELEMENT_TYPE& end)
 {
-	return linspace(start, end, end - start);
+	return linspace(start, end, 100);
 }
 
 template<typename VEC> CUDA_FUNC_IN typename VEC::ELEMENT_TYPE norm(const VEC& v, const typename VEC::ELEMENT_TYPE p = typename VEC::ELEMENT_TYPE(2))
