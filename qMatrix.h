@@ -65,54 +65,51 @@ private:
 public:
 	CUDA_FUNC_IN const T& operator()(int i, int j) const
 	{
-#ifndef ISCUDA
 		if (i >= M || j >= N)
+#ifndef ISCUDA
 			throw std::runtime_error("Invalid matrix access.");
+#else
+			printf("%s   Invalid matrix element access at (%d, %d)!\n", __PRETTY_FUNCTION__, i, j);
 #endif
 		return dat[i * N + j];
 	}
 	CUDA_FUNC_IN T& operator()(int i, int j)
 	{
-#ifndef ISCUDA
 		if (i >= M || j >= N)
+#ifndef ISCUDA
 			throw std::runtime_error("Invalid matrix access.");
+#else
+			printf("%s   Invalid matrix element access at (%d, %d)!\n", __PRETTY_FUNCTION__, i, j);
 #endif
 		return dat[i * N + j];
 	}
 };
 
-template<typename T, int M, int N, int OFF_M, int OFF_N, typename REF_MAT> struct MatrixDataStorage_Ref
+template<typename MAT, typename T> struct MatrixDataStorage_Ref
 {
 private:
-	REF_MAT& ref_mat;
+	MAT& ref_mat;
+	int off_i, off_j;
 public:
-	CUDA_FUNC_IN MatrixDataStorage_Ref(REF_MAT& ref)
-		: ref_mat(ref)
+	CUDA_FUNC_IN MatrixDataStorage_Ref(MAT& ref, int off_i, int off_j)
+		: ref_mat(ref), off_i(off_i), off_j(off_j)
 	{
 
 	}
 	CUDA_FUNC_IN const T& operator()(int i, int j) const
 	{
-#ifndef ISCUDA
-		if (i >= M || j >= N)
-			throw std::runtime_error("Invalid matrix access.");
-#endif
-		return ref_mat(OFF_M + i, OFF_N, j);
+		return (T)ref_mat(off_i + i, off_j, j);
 	}
 	CUDA_FUNC_IN T& operator()(int i, int j)
 	{
-#ifndef ISCUDA
-		if (i >= M || j >= N)
-			throw std::runtime_error("Invalid matrix access.");
-#endif
-		return ref_mat(OFF_M + i, OFF_N, j);
+		return ref_mat(off_i + i, off_j, j);
 	}
 };
 
 template<typename T, int M, int N> struct qMatrix
 {
 private:
-	T dat[DMAX2(M * N, 1)];
+	MatrixDataStorage_Value<T, M, N> m_storage;
 public:
 
 	enum SIZE
@@ -208,24 +205,12 @@ public:
 
 	CUDA_FUNC_IN const T& operator()(int i, int j) const
 	{
-		if (i >= M || j >= N)
-#ifndef ISCUDA
-			throw std::runtime_error("Invalid matrix access.");
-#else
-			printf("%s   Invalid matrix element access at (%d, %d)!\n", __PRETTY_FUNCTION__, i, j);
-#endif
-		return dat[i * N + j];
+		return m_storage(i, j);
 	}
 
 	CUDA_FUNC_IN T& operator()(int i, int j)
 	{
-		if (i >= M || j >= N)
-#ifndef ISCUDA
-			throw std::runtime_error("Invalid matrix access.");
-#else
-			printf("%s   Invalid matrix element access at (%d, %d)!\n", __PRETTY_FUNCTION__, i, j);
-#endif
-		return dat[i * N + j];
+		return m_storage(i, j);
 	}
 
 	CUDA_FUNC_IN const T& operator()(int i) const
