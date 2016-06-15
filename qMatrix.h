@@ -208,22 +208,22 @@ public:
 
 	CUDA_FUNC_IN const T& operator()(int i, int j) const
 	{
-#ifndef ISCUDA
 		if (i >= M || j >= N)
+#ifndef ISCUDA
 			throw std::runtime_error("Invalid matrix access.");
 #else
-		printf("%s   Invalid matrix element access at (%d, %d)!", __PRETTY_FUNCTION__, i, j);
+			printf("%s   Invalid matrix element access at (%d, %d)!\n", __PRETTY_FUNCTION__, i, j);
 #endif
 		return dat[i * N + j];
 	}
 
 	CUDA_FUNC_IN T& operator()(int i, int j)
 	{
-#ifndef ISCUDA
 		if (i >= M || j >= N)
+#ifndef ISCUDA
 			throw std::runtime_error("Invalid matrix access.");
 #else
-		printf("%s   Invalid matrix element access at (%d, %d)!", __PRETTY_FUNCTION__, i, j);
+			printf("%s   Invalid matrix element access at (%d, %d)!\n", __PRETTY_FUNCTION__, i, j);
 #endif
 		return dat[i * N + j];
 	}
@@ -239,7 +239,7 @@ public:
 #else
 		else
 		{
-			printf("%s   Matrix is not a vector!", __PRETTY_FUNCTION__);
+			printf("%s   Matrix is not a vector!\n", __PRETTY_FUNCTION__);
 			return operator()(0, 0);
 		}
 #endif 
@@ -256,7 +256,7 @@ public:
 #else
 		else
 		{
-			printf("%s   Matrix is not a vector!", __PRETTY_FUNCTION__);
+			printf("%s   Matrix is not a vector!\n", __PRETTY_FUNCTION__);
 			return operator()(0, 0);
 		}
 #endif 
