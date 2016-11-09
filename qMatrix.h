@@ -130,7 +130,7 @@ public:
 
 template<typename T, int M, int N, typename STORAGE = MatrixDataStorage_Value<T, M, N>> struct qMatrix
 {
-	static_assert(std::is_base_of<MatrixDataStorageBase, STORAGE>::value, "Storage type must be derived  from MatrixDataStorageBase!");
+	static_assert(std::is_base_of<MatrixDataStorageBase, STORAGE>::value, "Storage type must be derived from MatrixDataStorageBase!");
 	STORAGE m_storage;
 public:
 
@@ -829,6 +829,7 @@ public:
 	}
 };
 
+//does a copy of the matrix to a new object, helper for ref matrices
 template<typename T, int M, int N, typename S1> CUDA_FUNC_IN qMatrix<T, M, N> Clone(qMatrix<T, M, N, S1> const& lhs)
 {
 	qMatrix<T, M, N> res;
@@ -1028,7 +1029,7 @@ template<typename T, int N, typename S1> CUDA_FUNC_IN bool is_lower_hessenberg(c
 	return true;
 }
 
-//interpret A as symmetric mat, copying upper to lower
+//interpret A as a symmetric mat, copying upper to lower
 template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, N> symmatu(const qMatrix<T, N, N, S1>& A)
 {
 	qMatrix<T, N, N> res = A;
@@ -1038,7 +1039,7 @@ template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, N> symmatu(c
 	return res;
 }
 
-//interpret A as symmetric mat, copying lower to upper
+//interpret A as a symmetric mat, copying lower to upper
 template<typename T, int N, typename S1> CUDA_FUNC_IN qMatrix<T, N, N> symmatl(const qMatrix<T, N, N, S1>& A)
 {
 	qMatrix<T, N, N> res = A;
