@@ -62,7 +62,26 @@ template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN 
 	__hessenbergReduction__::loop<T, N, 0, S1, S2>::exec(H, Q);
 }
 
-//X has to be symmetric and of full rank
+namespace __eigenvalue_reoder__
+{
+	template<typename T, int N, typename S2, typename S3> CUDA_FUNC_IN void reorderEigenValues(int n_eig_counter, qMatrix<T, N, 1, S2>& D, qMatrix<T, N, N, S3>& V)
+	{
+		for (int i = 0; i < n_eig_counter - 1; i++)
+		{
+			int minIdx = i;
+			for (int j = i + 1; j < n_eig_counter; j++)
+				if (D(j) > D(minIdx))
+					minIdx = j;
+			if (minIdx != i)
+			{
+				V.swap_cols(i, minIdx);
+				D.swap_rows(i, minIdx);
+			}
+		}
+	}
+}
+
+//X has to be symmetric and of full rank, all symmetric matrices are NON defective i.e. have a full set of eigenvalues
 template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN void qrAlgorithmSymmetric(const qMatrix<T, N, N, S1>& X, qMatrix<T, N, 1, S2>& D, qMatrix<T, N, N, S3>& V, int n = 50)
 {
 	assert(X.is_symmetric());
@@ -85,6 +104,8 @@ template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN 
 		V = V * Q_i;
 	}
 	D = diag<qMatrix<T, N, 1>>(X_i);
+
+	__eigenvalue_reoder__::reorderEigenValues(N, D, V);
 }
 
 namespace __qrAlgorithm__
@@ -127,19 +148,7 @@ template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN 
 		}
 	}
 
-	for (int i = 0; i < n_eig_counter - 1; i++)
-	{
-		int minIdx = i;
-		for (int j = i + 1; j < n_eig_counter; j++)
-			if (D(j) > D(minIdx))
-				minIdx = j;
-		if (minIdx != i)
-		{
-			V.swap_cols(i, minIdx);
-			D.swap_rows(i, minIdx);
-
-		}
-	}
+	__eigenvalue_reoder__::reorderEigenValues(n_eig_counter, D, V);
 
 	return n_eig_counter;
 }
