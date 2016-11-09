@@ -219,6 +219,35 @@ template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N,
 	return x;
 }
 
+template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N, 1> SOR(const qMatrix<T, N, N, S1>& A, const qMatrix<T, N, 1, S2>& rhs, int n = 100)
+{
+	auto D = diagmat(diag<qMatrix<T, N, 1>>(A));
+	auto L = trimatl(A) - D;
+	auto U = trimatu(A) - D;
+
+	qMatrix<T, N, 1> x;
+	x.zero();
+
+	const T omega = (T)1.25;
+
+	for (int iter = 0; iter < n; iter++)
+	{
+		for(int i = 0; i < N; i++)
+		{
+			T sigma = (T)0;
+			for (int j = 0; j < N; j++)
+			{
+				if (i != j)
+					sigma += A(i,j) * x(j);
+			}
+
+			x(i) = (1 - omega) * x(i) + omega / A(i, i) * (rhs(i) - sigma);
+		}
+	}
+
+	return x;
+}
+
 template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N, 1> jacobi(const qMatrix<T, N, N, S1>& A, const qMatrix<T, N, 1, S2>& rhs, int n = 100)
 {
 	auto D = diagmat(diag<qMatrix<T, N, 1>>(A));
@@ -236,6 +265,7 @@ template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N,
 	
 	return x;
 }
+
 template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N, 1> tridiag_solve(const qMatrix<T, N, N, S1>& A, const qMatrix<T, N, 1, S2>& rhs)
 {
 	assert(is_tridiagonal(A));
