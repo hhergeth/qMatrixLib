@@ -219,6 +219,23 @@ template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N,
 	return x;
 }
 
+template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N, 1> jacobi(const qMatrix<T, N, N, S1>& A, const qMatrix<T, N, 1, S2>& rhs, int n = 100)
+{
+	auto D = diagmat(diag<qMatrix<T, N, 1>>(A));
+	auto R = A - D;
+
+	qMatrix<T, N, 1> x;
+	x.zero();
+
+	for (int i = 0; i < n; i++)
+	{
+		auto q = rhs - R * x;
+		for (int j = 0; j < N; j++)
+			x(j) = q(j) / D(j, j);
+	}
+	
+	return x;
+}
 template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N, 1> tridiag_solve(const qMatrix<T, N, N, S1>& A, const qMatrix<T, N, 1, S2>& rhs)
 {
 	assert(is_tridiagonal(A));
