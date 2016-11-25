@@ -809,7 +809,7 @@ public:
 		return os;
 	}
 
-	template<typename S2> qMatrix<T, M, N, STORAGE>& operator= (const qMatrix<T, M, N, S2>& rhs)
+	template<typename S2> CUDA_FUNC_IN qMatrix<T, M, N, STORAGE>& operator= (const qMatrix<T, M, N, S2>& rhs)
 	{
 		for (int i = 0; i < M; i++)
 			for (int j = 0; j < N; j++)
@@ -817,7 +817,7 @@ public:
 		return *this;
 	}
 
-	qMatrix<T, M, N, STORAGE>& operator= (const qMatrix<T, M, N, STORAGE>& rhs)
+	CUDA_FUNC_IN qMatrix<T, M, N, STORAGE>& operator= (const qMatrix<T, M, N, STORAGE>& rhs)
 	{
 		if(this != &rhs)
 		{
@@ -969,7 +969,7 @@ namespace __kronecker_product__
 	{
 		CUDA_FUNC_IN static void exec(const qMatrix<T, M, N, S1>& lhs, const qMatrix<T, P, R, S2>& rhs, qMatrix<T, M * P, N * R, S3>& res)
 		{
-			res.submat<P * i, R * j, P * (i + 1) - 1, R * (j + 1) - 1>() = lhs(i, j) * rhs;
+			res.template submat<P * i, R * j, P * (i + 1) - 1, R * (j + 1) - 1>() = lhs(i, j) * rhs;
 			loop<T, M, N, P, R, i + 1, j, S1, S2, S3>::exec(lhs, rhs, res);
 		}
 	};
