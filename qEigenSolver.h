@@ -2,6 +2,7 @@
 
 #include "qMatrix.h"
 #include "qLinearSolver.h"
+#include "qHelper.h"
 
 template<typename T, typename S1> CUDA_FUNC_IN void eig2x2(const qMatrix<T, 2, 2, S1>& A, T& l1, T& l2)
 {
@@ -18,48 +19,25 @@ template<typename T, typename S1> CUDA_FUNC_IN void eig2x2(const qMatrix<T, 2, 2
 	}
 }
 
-namespace __hessenbergReduction__
-{
-	template<typename T, int N, int i, typename S1, typename S2> struct loop
-	{
-		CUDA_FUNC_IN static void exec(qMatrix<T, N, N, S1>& A, qMatrix<T, N, N, S2>& Q)
-		{
-			if (i < N - 2)
-			{
-				/*auto u = __qrHousholder__::householder(A.submat<i + 1, i, N - 1, i>());
-				auto P_i = qMatrix<T, N - i - 1, N - i - 1>::Id() - T(2) * u * u.transpose();
-				A.submat<i + 1, i, N - 1, N - 1>(P_i * A.submat<i + 1, i, N - 1, N - 1>());
-				A.submat<0, i + 1, N - 1, N - 1>(A.submat<0, i + 1, N - 1, N - 1>() * P_i);
-				Q.submat<i + 1, i + 1, N - 1, N - 1>(Q.submat<i + 1, i + 1, N - 1, N - 1>() * P_i);*/
-				//auto v = A.submat<i+1,i,N-1,i>();
-				//auto alpha = -norm(v);
-				//if (v(1) < 0)
-				//	alpha = -alpha;
-				//v(1) = v(1) - alpha;
-				//v = v / norm(v);
-				//A.submat<i + 1, i + 1, N - 1, N - 1>(A.submat<i + 1, i + 1, N - 1, N - 1>() - T(2) * v * (v.transpose() * A.submat<i + 1, i + 1, N - 1, N - 1>()));
-				//A(i + 1, i) = alpha;
-				//A.submat<i + 2, i, N - 1, i>() = qMatrix<T, N - i - 2, 1>::Zero();
-				//A.submat<0, i + 1, N - 1, N - 1>(A.submat<0, i + 1, N - 1, N - 1>() - T(2) * (A.submat<0, i + 1, N - 1, N - 1>() * v) * v.transpose());
-				
-				loop<T, N, i + 1, S1, S2>::exec(A, Q);
-			}
-		}
-	};
-	template<typename T, int N, typename S1, typename S2> struct loop<T, N, N, S1, S2>
-	{
-		CUDA_FUNC_IN static void exec(qMatrix<T, N, N, S1>& A, qMatrix<T, N, N, S2>& Q)
-		{
-
-		}
-	};
-}
-
 template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN void hessenbergReduction(const qMatrix<T, N, N, S1>& A, qMatrix<T, N, N, S2>& H, qMatrix<T, N, N, S3>& Q)
 {
 	H = A;
 	Q.id();
-	__hessenbergReduction__::loop<T, N, 0, S1, S2>::exec(H, Q);
+	
+	for_i<0, N - 2>([&H, &Q](auto kT)
+	{
+		const int k = decltype(kT)::VAL;
+
+		auto u = Clone(H.template submat<k+1,k,N-1,k>());
+		u(0) = u(0) + norm(u) * (u(0) >= (T)0 ? (T)1 : (T)-1);
+		auto v = u / norm(u);
+		auto a1 = H.template submat<k + 1, 0, N - 1, N - 1>();
+		a1 = a1 - (T)2 * v * (v.transpose() * a1);
+		auto a2 = H.template submat<0, k + 1, N - 1, N - 1>();
+		a2 = a2 - (a2 * ((T)2 * v)) * v.transpose();
+		auto a3 = Q.template submat<0, k + 1, N - 1, N - 1>();
+		a3 = a3 - (a3 * ((T)2 * v)) * v.transpose();
+	});
 }
 
 namespace __eigenvalue_reoder__
