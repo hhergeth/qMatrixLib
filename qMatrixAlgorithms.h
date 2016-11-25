@@ -16,13 +16,13 @@ namespace __svd__
 
 		for (int i = 0; i < N; i++)
 		{
-			T S0 = S(m + 0, i);
-			T S1 = S(m + 1, i);
-			S(m, i) += S0*(c - 1);
-			S(m, i) += S1*(-s);
+			T s0 = S(m + 0, i);
+			T s1 = S(m + 1, i);
+			S(m, i) += s0*(c - 1);
+			S(m, i) += s1*(-s);
 
-			S(m + 1, i) += S0*(s);
-			S(m + 1, i) += S1*(c - 1);
+			S(m + 1, i) += s0*(s);
+			S(m + 1, i) += s1*(c - 1);
 		}
 	}
 
@@ -34,13 +34,13 @@ namespace __svd__
 
 		for (int i = 0; i < N; i++)
 		{
-			T S0 = S(i, m + 0);
-			T S1 = S(i, m + 1);
-			S(i, m) += S0*(c - 1);
-			S(i, m) += S1*(-s);
+			T s0 = S(i, m + 0);
+			T s1 = S(i, m + 1);
+			S(i, m) += s0*(c - 1);
+			S(i, m) += s1*(-s);
 
-			S(i, m + 1) += S0*(s);
-			S(i, m + 1) += S1*(c - 1);
+			S(i, m + 1) += s0*(s);
+			S(i, m + 1) += s1*(c - 1);
 		}
 	}
 }

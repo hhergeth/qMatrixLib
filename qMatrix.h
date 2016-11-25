@@ -90,7 +90,7 @@ public:
 	}
 };
 
-template<typename MAT, typename T> struct MatrixDataStorage_Ref : public MatrixDataStorageBase
+template<typename MAT> struct MatrixDataStorage_Ref : public MatrixDataStorageBase
 {
 private:
 	MAT& ref_mat;
@@ -101,17 +101,17 @@ public:
 	{
 
 	}
-	CUDA_FUNC_IN const T& operator()(int i, int j) const
+	CUDA_FUNC_IN const typename MAT::ELEMENT_TYPE& operator()(int i, int j) const
 	{
-		return (T)ref_mat(off_i + i, off_j + j);
+		return ref_mat(off_i + i, off_j + j);
 	}
-	CUDA_FUNC_IN T& operator()(int i, int j)
+	CUDA_FUNC_IN typename MAT::ELEMENT_TYPE& operator()(int i, int j)
 	{
 		return ref_mat(off_i + i, off_j + j);
 	}
 };
 
-template<typename MAT, typename T> struct MatrixDataStorage_Ref_Const : public MatrixDataStorageBase
+template<typename MAT> struct MatrixDataStorage_Ref_Const : public MatrixDataStorageBase
 {
 private:
 	const MAT& ref_mat;
@@ -122,9 +122,9 @@ public:
 	{
 
 	}
-	CUDA_FUNC_IN const T& operator()(int i, int j) const
+	CUDA_FUNC_IN const typename MAT::ELEMENT_TYPE& operator()(int i, int j) const
 	{
-		return (T)ref_mat(off_i + i, off_j + j);
+		return ref_mat(off_i + i, off_j + j);
 	}
 };
 
@@ -308,8 +308,8 @@ public:
 	}
 
 private:
-	typedef MatrixDataStorage_Ref<qMatrix<T, M, N, STORAGE>, T> REF_STORAGE;
-	typedef MatrixDataStorage_Ref_Const<qMatrix<T, M, N, STORAGE>, T> REF_CONST_STORAGE;
+	typedef MatrixDataStorage_Ref<qMatrix<T, M, N, STORAGE>> REF_STORAGE;
+	typedef MatrixDataStorage_Ref_Const<qMatrix<T, M, N, STORAGE>> REF_CONST_STORAGE;
 public:
 	//first_row, first_col, last_row, last_col
 	template<int p, int r, int q, int s> CUDA_FUNC_IN qMatrix<T, q - p + 1, s - r + 1, REF_STORAGE> submat()
