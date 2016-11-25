@@ -17,5 +17,4 @@ Please note that this library is not inteded to be used for any high performance
 There should be nothing to do besides including the appropriate files.
 
 ### Bugs
-- The `hessenbergReduction`function is not working correctly.
-- The `svd` function is not working correctly.
+- The `svd` function is not working correctly (this implies the null function as well).
