@@ -129,6 +129,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="qEigenSolver.h" />
+    <ClInclude Include="qHelper.h" />
     <ClInclude Include="qLinearSolver.h" />
     <ClInclude Include="qMatrix.h" />
     <ClInclude Include="qMatrixAlgorithms.h" />
