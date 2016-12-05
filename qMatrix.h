@@ -668,57 +668,62 @@ public:
 		return true;
 	}
 
-	CUDA_FUNC_IN bool is_upper_triangular() const
+	CUDA_FUNC_IN bool is_upper_triangular(const T& eps = 0) const
 	{
 		for (int i = 1; i < M; i++)
 			for (int j = 0; j < i; j++)
-				if (operator()(i, j) != 0)
+				if (::abs(operator()(i, j)) > eps)
 					return false;
 		return true;
 	}
 
-	CUDA_FUNC_IN bool is_lower_triangular() const
+	CUDA_FUNC_IN bool is_lower_triangular(const T& eps = 0) const
 	{
 		for (int j = 1; j < N; j++)
 			for (int i = 0; i < j; i++)
-				if (operator()(i, j) != 0)
+				if (::abs(operator()(i, j)) > eps)
 					return false;
 		return true;
 	}
 
-	CUDA_FUNC_IN bool is_upper_bidiagonal() const
+	CUDA_FUNC_IN bool is_upper_bidiagonal(const T& eps = 0) const
 	{
 		for (int i = 0; i < M; i++)
 		{
-			for (int j = 0; j < i; j++)
-				if (operator()(i, j) != 0)
+			for (int j = 0; j < DMIN2(i, N); j++)
+				if (::abs(operator()(i, j)) > eps)
 					return false;
 
 			for (int j = i + 2; j < N; j++)
-				if (operator()(i, j) != 0)
+				if (::abs(operator()(i, j)) > eps)
 					return false;
 		}
 		return true;
 	}
 
-	CUDA_FUNC_IN bool is_lower_bidiagonal() const
+	CUDA_FUNC_IN bool is_lower_bidiagonal(const T& eps = 0) const
 	{
 		for (int i = 0; i < M; i++)
 		{
-			for (int j = 0; j < i - 1; j++)
-				if (operator()(i, j) != 0)
+			for (int j = 0; j < DMIN2(i - 1, N); j++)
+				if (::abs(operator()(i, j)) > eps)
 					return false;
 
 			for (int j = i + 1; j < N; j++)
-				if (operator()(i, j) != 0)
+				if (::abs(operator()(i, j)) > eps)
 					return false;
 		}
 		return true;
 	}
 
-	CUDA_FUNC_IN bool is_bidiagonal() const
+	CUDA_FUNC_IN bool is_bidiagonal(const T& eps = 0) const
 	{
-		return is_upper_bidiagonal() || is_lower_bidiagonal();
+		return is_upper_bidiagonal(eps) || is_lower_bidiagonal(eps);
+	}
+
+	CUDA_FUNC_IN bool is_diagonal(const T& eps = 0) const
+	{
+		return is_upper_bidiagonal(eps) && is_lower_bidiagonal(eps);
 	}
 
 	CUDA_FUNC_IN bool is_zero() const
