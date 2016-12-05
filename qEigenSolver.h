@@ -98,35 +98,59 @@ namespace __qrAlgorithm__
 template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN int qrAlgorithm(const qMatrix<T, N, N, S1>& X, qMatrix<T, N, 1, S2>& D, qMatrix<T, N, N, S3>& V, int n = 50)
 {
 	V.id();
-	qMatrix<T, N, N> X_i = X;
-	for (int i = 0; i < n; i++)
+	int n_eig_counter = 0;
+	if (X.is_diagonal())
 	{
-		qMatrix<T, N, N> Q_i, R_i, P;
-		qrHousholder(X_i, Q_i, R_i);
-		X_i = R_i * Q_i;
-		V = V * Q_i;
+		D = diag<qMatrix<T, N, 1>>(X);
+		for (int i = 0; i < N; i++)
+		{
+			if (D(i) < T(1e-4))
+			{
+				D(i) = 0;
+				V.col(i).zero();
+			}
+			else n_eig_counter++;
+		}
+		__eigenvalue_reoder__::reorderEigenValues(N, D, V);
 	}
-	D = diag<qMatrix<T, N, 1>>(X_i);
-	V.zero();
-	int n_eig_counter = 0, j = 0;
-	while (j < N && std::abs(D(j)) > T(1e-5))
+	else
 	{
-		auto eigVal = D(j++);
-		auto eigVec = __qrAlgorithm__::inversePowerMethod(X, eigVal);
-		auto diff = X * eigVec - eigVal  * eigVec;
-		if (norm(diff) > T(1e-4))
+		qMatrix<T, N, N> X_i = X;
+		int i = 0;
+		while (i++ < n)// && !X_i.is_diagonal(1e-3f)
 		{
-			D(j-1) = 0;
-			V.col(j-1).zero();
+			qMatrix<T, N, N> Q_i, R_i;
+			qrHousholder(X_i, Q_i, R_i);
+			X_i = R_i * Q_i;
+			V = V * Q_i;
 		}
-		else
+		D = diag<qMatrix<T, N, 1>>(X_i);
+
+		V.zero();
+		int j = 0;
+		while (j < N && std::abs(D(j)) > T(1e-5))
 		{
-			V.col(n_eig_counter) = eigVec.num_negative_elements() > N / 2 ? -eigVec : eigVec;
-			n_eig_counter++;
+			auto eigVal = D(j++);
+			auto eigVec = __qrAlgorithm__::inversePowerMethod(X, eigVal);
+			auto diff = X * eigVec - eigVal  * eigVec;
+			auto d = norm(diff);
+			if (d > T(1e-4) || isnan(d) || isinf(d))
+			{
+				D(j - 1) = 0;
+				V.col(j - 1).zero();
+			}
+			else
+			{
+				V.col(n_eig_counter) = eigVec.num_negative_elements() > N / 2 ? -eigVec : eigVec;
+				n_eig_counter++;
+			}
 		}
+		__eigenvalue_reoder__::reorderEigenValues(n_eig_counter, D, V);
 	}
 
-	__eigenvalue_reoder__::reorderEigenValues(n_eig_counter, D, V);
+	//fill remaining columns of V with unit vectors
+	//for (int col = n_eig_counter; col < N; col++)
+	//	V.col(col) = e<qMatrix<T, N, 1>>(col);
 
 	return n_eig_counter;
 }

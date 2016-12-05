@@ -20,7 +20,7 @@ namespace __qrHousholder__
 	{
 		qMatrix<T, M, 1> a = Clone(A.col(k)), e = ::e<qMatrix<T, M, 1>>(k + off), u, v;
 		if (a.accu() == a(0))
-			return a / a(0);
+			return a;
 		if (UPPER)
 			for (int i = 0; i < k + off; i++)
 				a(i) = 0;
@@ -38,7 +38,7 @@ namespace __qrHousholder__
 	{
 		qMatrix<T, 1, N> a = Clone(A.row(k)), e = ::e<qMatrix<T, 1, N>>(k + off), u, v;
 		if (a.accu() == a(0))
-			return a / a(0);
+			return a;
 		if (UPPER)
 			for (int i = 0; i < k + off; i++)
 				a(i) = 0;
