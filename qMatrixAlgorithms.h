@@ -45,10 +45,10 @@ template<typename T, int M, int N, typename S1, typename S2, typename S3, typena
 	qMatrix<T, N, 1> evV;
 	qMatrix<T, N, N> V2;
 	int nEigenvalues2 = qrAlgorithm(B.transpose() * B, evV, V2, n);
-	
+
 	if (nEigenvalues1 != nEigenvalues2)
 		return -1;
-	
+
 	S = diagmat<T, M, N>(evU.sqrt());
 	LOG_MAT(U); LOG_MAT(V); LOG_MAT(V2);
 	for (int i = nEigenvalues1; i < M; i++)

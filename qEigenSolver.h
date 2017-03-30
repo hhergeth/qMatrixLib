@@ -19,25 +19,42 @@ template<typename T, typename S1> CUDA_FUNC_IN void eig2x2(const qMatrix<T, 2, 2
 	}
 }
 
+namespace __hessenbergReduction__
+{
+	template<int N, typename T, typename S2, typename S3> struct for_iter
+	{
+		qMatrix<T, N, N, S2>& H;
+		qMatrix<T, N, N, S3>& Q;
+		for_iter(qMatrix<T, N, N, S2>& H, qMatrix<T, N, N, S3>& Q)
+			: H(H), Q(Q)
+		{
+
+		}
+
+		template<int I> void operator()(__template_unroll__::templateIntWrapper<I> kT)
+		{
+			const int k = decltype(kT)::VAL;
+
+			auto u = Clone(H.template submat<k + 1, k, N - 1, k>());
+			u(0) = u(0) + norm(u) * (u(0) >= (T)0 ? (T)1 : (T)-1);
+			auto v = u / norm(u);
+			auto a1 = H.template submat<k + 1, 0, N - 1, N - 1>();
+			a1 = a1 - (T)2 * v * (v.transpose() * a1);
+			auto a2 = H.template submat<0, k + 1, N - 1, N - 1>();
+			a2 = a2 - (a2 * ((T)2 * v)) * v.transpose();
+			auto a3 = Q.template submat<0, k + 1, N - 1, N - 1>();
+			a3 = a3 - (a3 * ((T)2 * v)) * v.transpose();
+		}
+	};
+}
 template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN void hessenbergReduction(const qMatrix<T, N, N, S1>& A, qMatrix<T, N, N, S2>& H, qMatrix<T, N, N, S3>& Q)
 {
 	H = A;
 	Q.id();
-	
-	for_i<0, N - 2>([&H, &Q](auto kT)
-	{
-		const int k = decltype(kT)::VAL;
 
-		auto u = Clone(H.template submat<k+1,k,N-1,k>());
-		u(0) = u(0) + norm(u) * (u(0) >= (T)0 ? (T)1 : (T)-1);
-		auto v = u / norm(u);
-		auto a1 = H.template submat<k + 1, 0, N - 1, N - 1>();
-		a1 = a1 - (T)2 * v * (v.transpose() * a1);
-		auto a2 = H.template submat<0, k + 1, N - 1, N - 1>();
-		a2 = a2 - (a2 * ((T)2 * v)) * v.transpose();
-		auto a3 = Q.template submat<0, k + 1, N - 1, N - 1>();
-		a3 = a3 - (a3 * ((T)2 * v)) * v.transpose();
-	});
+	auto iter = __hessenbergReduction__::for_iter<N, T, S2, S3>(H, Q);
+
+	for_i<0, N - 2>(iter);
 }
 
 namespace __eigenvalue_reoder__

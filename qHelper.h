@@ -28,6 +28,22 @@ template<int N> struct forwardUnroll<N, N>
 	}
 };
 
+template<typename F, int N> struct down_iter_callback
+{
+	F& clb;
+	down_iter_callback(F& clb)
+		: clb(clb)
+	{
+
+	}
+
+	template<int I> void operator()(templateIntWrapper<I> kT)
+	{
+		const int k = decltype(kT)::VAL;
+		clb(__template_unroll__::templateIntWrapper<N - k>());
+	}
+};
+
 }
 
 //unrolls i = k; i < N; i++
@@ -39,8 +55,6 @@ template<int k, int N, typename F> CUDA_FUNC_IN void for_i(F clb)
 //unrolls i = N; i >= k; i--
 template<int N, int k, typename F> CUDA_FUNC_IN void for_i_down(F clb)
 {
-	__template_unroll__::forwardUnroll<k, N + 1>::exec_iteration([&clb](auto iT)
-	{
-		clb(__template_unroll__::templateIntWrapper<N - decltype(iT)::VAL>());
-	});
+	auto iter = __template_unroll__::down_iter_callback<F, N>(clb);
+	__template_unroll__::forwardUnroll<k, N + 1>::exec_iteration(iter);
 }
