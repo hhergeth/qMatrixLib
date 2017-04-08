@@ -196,6 +196,20 @@ template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N,
 	return solve(P, L, U, rhs);
 }
 
+template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN void choleskyDecomposition(const qMatrix<T, N, N, S1>& A, qMatrix<T, N, N, S2>& L)
+{
+	L.zero();
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < (i + 1); j++)
+		{
+			T s = T(0);
+			for (int k = 0; k < j; k++)
+				s += L(k, i) * L(k, j);
+			L(j, i) = (i == j) ? sqrt(A(i, i) - s) : (T(1) / L(j, j) * (A(j, i) - s));
+		}
+	L = L.transpose();
+}
+
 template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N, 1> conjugate_gradient(const qMatrix<T, N, N, S1>& A, const qMatrix<T, N, 1, S2>& rhs, int n = 100)
 {
 	qMatrix<T, N, 1> x;
@@ -262,7 +276,7 @@ template<typename T, int N, typename S1, typename S2> CUDA_FUNC_IN qMatrix<T, N,
 		for (int j = 0; j < N; j++)
 			x(j) = q(j) / D(j, j);
 	}
-	
+
 	return x;
 }
 
