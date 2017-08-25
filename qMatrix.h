@@ -317,11 +317,19 @@ public:
 	//first_row, first_col, last_row, last_col
 	template<int p, int r, int q, int s> CUDA_FUNC_IN qMatrix<T, q - p + 1, s - r + 1, REF_STORAGE> submat()
 	{
+		static_assert(p >= 0 && p < M, "Out of bounds submatrix access!");
+		static_assert(q >= 0 && q < M, "Out of bounds submatrix access!");
+		static_assert(r >= 0 && r < N, "Out of bounds submatrix access!");
+		static_assert(s >= 0 && s < N, "Out of bounds submatrix access!");
 		return qMatrix<T, q - p + 1, s - r + 1, REF_STORAGE>(REF_STORAGE(*this, p, r));
 	}
 
 	template<int p, int r, int q, int s> CUDA_FUNC_IN qMatrix<T, q - p + 1, s - r + 1, REF_CONST_STORAGE> submat() const
 	{
+		static_assert(p >= 0 && p < M, "Out of bounds submatrix access!");
+		static_assert(q >= 0 && q < M, "Out of bounds submatrix access!");
+		static_assert(r >= 0 && r < N, "Out of bounds submatrix access!");
+		static_assert(s >= 0 && s < N, "Out of bounds submatrix access!");
 		return qMatrix<T, q - p + 1, s - r + 1, REF_CONST_STORAGE>(REF_CONST_STORAGE(*this, p, r));
 	}
 
