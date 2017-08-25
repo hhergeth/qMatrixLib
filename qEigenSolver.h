@@ -143,24 +143,33 @@ template<typename T, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN 
 		}
 		D = diag<qMatrix<T, N, 1>>(X_i);
 
+		auto isEigenVec = [&](const qMatrix<T, N, 1>& eigVec, float eigVal)
+		{
+			auto diff = X * eigVec - eigVal  * eigVec;
+			auto d = norm(diff);
+			return d <= T(1e-4) && !isnan(d) && !isinf(d);
+		};
+
+		auto oldV = V;
 		V.zero();
 		int j = 0;
 		while (j < N && std::abs(D(j)) > T(1e-5))
 		{
-			auto eigVal = D(j++);
-			auto eigVec = __qrAlgorithm__::inversePowerMethod(X, eigVal);
-			auto diff = X * eigVec - eigVal  * eigVec;
-			auto d = norm(diff);
-			if (d > T(1e-4) || isnan(d) || isinf(d))
+			auto eigVal = D(j);
+			auto eigVec = Clone(oldV.col(j));
+			if (!isEigenVec(eigVec, eigVal))
+				eigVec = __qrAlgorithm__::inversePowerMethod(X, eigVal);
+			if (!isEigenVec(eigVec, eigVal) || eigVal <= 0)
 			{
-				D(j - 1) = 0;
-				V.col(j - 1).zero();
+				D(j) = 0;
+				V.col(j).zero();
 			}
 			else
 			{
 				V.col(n_eig_counter) = eigVec.num_negative_elements() > N / 2 ? -eigVec : eigVec;
 				n_eig_counter++;
 			}
+			j++;
 		}
 		__eigenvalue_reoder__::reorderEigenValues(n_eig_counter, D, V);
 	}
