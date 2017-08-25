@@ -52,7 +52,6 @@ template<typename T, int M, int N, typename S1, typename S2, typename S3, typena
 		return -1;
 
 	S = diagmat<T, M, N>(evU.sqrt());
-	LOG_MAT(U); LOG_MAT(V); LOG_MAT(V2);
 	for (int i = nEigenvalues1; i < M; i++)
 		U2.col(i) = e<qMatrix<float, M, 1>>(i);
 	for (int i = nEigenvalues2; i < N; i++)
@@ -111,7 +110,6 @@ template<typename T, int M, int N, typename S1, typename S2, typename S3> CUDA_F
 	qMatrix<T, N, N> V;
 	qMatrix<T, M, N> E;
 	int rank = svd(A, U, V, E);
-	LOG_MAT(U); LOG_MAT(E); LOG_MAT(V);
 	if (rank == -1)
 		return -1;
 	leftNull.zero();
