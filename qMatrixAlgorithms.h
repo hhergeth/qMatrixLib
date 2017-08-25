@@ -105,19 +105,21 @@ template<typename T, int N, typename S1> CUDA_FUNC_IN T det(const qMatrix<T, N, 
 }
 
 //computes left/right null space and returns the rank of the matrix
-template<typename T, int M, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN int null(const qMatrix<T, N, M, S1>& A, qMatrix<T, DMIN2(M, N), M, S2>& leftNull, qMatrix<T, N, DMIN2(M, N), S3>& rightNull, const T& eps = T(1e-5))
+template<typename T, int M, int N, typename S1, typename S2, typename S3> CUDA_FUNC_IN int null(const qMatrix<T, M, N, S1>& A, qMatrix<T, M, M, S2>& leftNull, qMatrix<T, N, N, S3>& rightNull, const T& eps = T(1e-5))
 {
 	qMatrix<T, M, M> U;
 	qMatrix<T, N, N> V;
 	qMatrix<T, M, N> E;
 	int rank = svd(A, U, V, E);
 	LOG_MAT(U); LOG_MAT(E); LOG_MAT(V);
+	if (rank == -1)
+		return -1;
 	leftNull.zero();
 	rightNull.zero();
 	for (int i = rank; i < N; i++)
 	{
-		leftNull.col(i - rank) = V.col(i);
-		rightNull.row(i - rank) = U.row(i);
+		leftNull.row(i - rank) = (U.transpose()).row(i);
+		rightNull.col(i - rank) = V.col(i);
 	}
 	return rank;
 }
