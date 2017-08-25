@@ -6,7 +6,7 @@
 
 #include <limits>
 
-template<typename T, int M, int N, typename S1, typename S2, typename S3, typename S4> CUDA_FUNC_IN void bidiagonalisation(const qMatrix<T, M, N, S1>& A, qMatrix<T, M, M, S2>& U, qMatrix<T, M, N, S3>& B, qMatrix<T, N, N, S4>& V)
+template<typename T, int M, int N, typename S1, typename S2, typename S3, typename S4> CUDA_FUNC_IN void bidiagonalisation(const qMatrix<T, M, N, S1>& A, qMatrix<T, M, M, S2>& U, qMatrix<T, N, N, S4>& V, qMatrix<T, M, N, S3>& B)
 {
 	static_assert(M >= N, "Only valid for M >= N matrices A");
 	B = A;
@@ -39,7 +39,7 @@ template<typename T, int M, int N, typename S1, typename S2, typename S3, typena
 template<typename T, int M, int N, typename S1, typename S2, typename S3, typename S4> CUDA_FUNC_IN int svd(const qMatrix<T, M, N, S1>& A, qMatrix<T, M, M, S2>& U, qMatrix<T, N, N, S3>& V, qMatrix<T, M, N, S4>& S, int n = 50)
 {
 	qMatrix<T, M, N> B;
-	bidiagonalisation(A, U, B, V);
+	bidiagonalisation(A, U, V, B);
 
 	qMatrix<T, M, 1> evU;
 	qMatrix<T, M, M> U2;
