@@ -8,28 +8,30 @@
 
 template<typename T, int M, int N, typename S1, typename S2, typename S3, typename S4> CUDA_FUNC_IN void bidiagonalisation(const qMatrix<T, M, N, S1>& A, qMatrix<T, M, M, S2>& U, qMatrix<T, M, N, S3>& B, qMatrix<T, N, N, S4>& V)
 {
+	static_assert(M >= N, "Only valid for M >= N matrices A");
 	B = A;
 	U = qMatrix<T, M, M>::Id();
 	V = qMatrix<T, N, N>::Id();
 	for (int k = 0; k < N; k++)
 	{
 		qMatrix<T, M, 1> u = __qrHousholder__::householderCol(B, k);
-		if (u.is_zero())
-			break;
-		qMatrix<T, M, M> Q_k = qMatrix<T, M, M>::Id() - T(2) * u * u.transpose();
+		if (!u.is_zero())
+		{
+			qMatrix<T, M, M> Q_k = qMatrix<T, M, M>::Id() - T(2) * u * u.transpose() / float(u.transpose() * u);
 
-		B = Q_k * B;
-		U = U * Q_k;
-
+			B = Q_k * B;
+			U = U * Q_k;
+		}
 		if (k < N - 2)
 		{
 			qMatrix<T, 1, N> v = __qrHousholder__::householderRow(B, k, 1);
-			if (v.is_zero())
-				break;
-			qMatrix<T, N, N> P_k1 = qMatrix<T, N, N>::Id() - T(2) * v.transpose() * v;
+			if (!v.is_zero())
+			{
+				qMatrix<T, N, N> P_k1 = qMatrix<T, N, N>::Id() - T(2) * v.transpose() * v / float(v * v.transpose());
 
-			B = B * P_k1;
-			V = V * P_k1;
+				B = B * P_k1;
+				V = V * P_k1;
+			}
 		}
 	}
 }
