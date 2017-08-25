@@ -63,7 +63,7 @@ template<typename T> CUDA_FUNC_IN T qMatrix_sqr(T val)
 
 struct MatrixDataStorageBase
 {
-	
+
 };
 
 template<typename T, int M, int N> struct MatrixDataStorage_Value : public MatrixDataStorageBase
@@ -262,7 +262,7 @@ public:
 			printf("%s   Matrix is not a vector!\n", __PRETTY_FUNCTION__);
 			return operator()(0, 0);
 		}
-#endif 
+#endif
 	}
 
 	CUDA_FUNC_IN T& operator()(int i)
@@ -279,7 +279,7 @@ public:
 			printf("%s   Matrix is not a vector!\n", __PRETTY_FUNCTION__);
 			return operator()(0, 0);
 		}
-#endif 
+#endif
 	}
 
 	CUDA_FUNC_IN bool operator==(const qMatrix<T, M, N>& rhs) const
@@ -525,7 +525,7 @@ public:
 		T res = T();
 		for (int i = 0; i < M; i++)
 			for (int j = 0; j < N; j++)
-				res += std::abs(operator()(i, j));
+				res += DABS(operator()(i, j));
 		return res;
 	}
 
@@ -535,7 +535,7 @@ public:
 		T res = T();
 		for (int i = row_start; i <= row_end; i++)
 			for (int j = col_start; j <= col_end; j++)
-				res += std::abs(operator()(i, j));
+				res += DABS(operator()(i, j));
 		return res;
 	}
 
@@ -545,27 +545,27 @@ public:
 		T res = T();
 		for (int i = row_start; i <= row_end; i++)
 			for (int j = col_start; j <= col_end; j++)
-				res += std::abs(operator()(i, j));
+				res += DABS(operator()(i, j));
 		return res;
 	}
 
 	//the minimal entry
 	CUDA_FUNC_IN T min() const
 	{
-		T res = std::numeric_limits<T>::max();
+		T res = operator()(0, 0);
 		for (int i = 0; i < M; i++)
 			for (int j = 0; j < N; j++)
-				res = std::min(res, operator()(i, j));
+				res = DMIN2(res, operator()(i, j));
 		return res;
 	}
 
 	//the maximal entry
 	CUDA_FUNC_IN T max() const
 	{
-		T res = std::numeric_limits<T>::min();
+		T res = operator()(0, 0);
 		for (int i = 0; i < M; i++)
 			for (int j = 0; j < N; j++)
-				res = std::max(res, operator()(i, j));
+				res = DMAX2(res, operator()(i, j));
 		return res;
 	}
 
@@ -609,8 +609,8 @@ public:
 		{
 			T s = T(0);
 			for (int i = 0; i < M; i++)
-				s += std::abs(operator()(i, j));
-			r = std::max(r, s);
+				s += DABS(operator()(i, j));
+			r = DMAX2(r, s);
 		}
 		return r;
 	}
@@ -622,8 +622,8 @@ public:
 		{
 			T s = T(0);
 			for (int j = 0; j < N; j++)
-				s += std::abs(operator()(i, j));
-			r = std::max(r, s);
+				s += DABS(operator()(i, j));
+			r = DMAX2(r, s);
 		}
 		return r;
 	}
@@ -643,7 +643,7 @@ public:
 	{
 		for (int i = 0; i < M; i++)
 			for (int j = 0; j < N; j++)
-				if (operator()(i, j) != operator()(i, j) || !std::isfinite(operator()(i, j)))
+				if (operator()(i, j) != operator()(i, j) || isinf(operator()(i, j)))
 					return false;
 		return true;
 	}
@@ -1109,7 +1109,7 @@ template<typename T, int M, int N, typename S1, typename S2> CUDA_FUNC_IN qMatri
 	qMatrix<T, M, N> res;
 	for (int i = 0; i < M; i++)
 		for (int j = 0; j < N; j++)
-			res(i, j) = std::min(A(i, j), B(i, j));
+			res(i, j) = DMIN2(A(i, j), B(i, j));
 	return res;
 }
 
@@ -1118,6 +1118,6 @@ template<typename T, int M, int N, typename S1, typename S2> CUDA_FUNC_IN qMatri
 	qMatrix<T, M, N> res;
 	for (int i = 0; i < M; i++)
 		for (int j = 0; j < N; j++)
-			res(i, j) = std::max(A(i, j), B(i, j));
+			res(i, j) = DMAX2(A(i, j), B(i, j));
 	return res;
 }
