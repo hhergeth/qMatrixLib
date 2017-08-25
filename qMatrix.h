@@ -35,9 +35,12 @@
 #define DMAX2(A, B) ((A) > (B) ? (A) : (B))
 #endif
 
+#define DABS(A) (DMAX2(A, 0))
+
+//sign+ function which returns 1 for 0 as input
 template <typename T> CUDA_FUNC_IN int qMatrix_sgn(T val)
 {
-	return (T(0) < val) - (val < T(0));
+	return val >= T(0) ? 1 : -1;
 }
 
 template <typename T> CUDA_FUNC_IN T qMatrix_round(T val)
